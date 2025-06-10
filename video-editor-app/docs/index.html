@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>簡易編集ツール</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="script.js" defer></script>
+</head>
+<body>
+    <div class="header">
+        <button>保存</button>
+        <button>読み込み</button>
+        <button>書き出し</button>
+        <button id="play-all">全素材を連続再生</button>
+    </div>
+
+    <div class="editor-container">
+        <div class="media-panel">
+            <div class="media-item">010</div>
+            <div class="media-item">016</div>
+            <div class="media-item">022</div>
+            <div class="media-item">018</div>
+        </div>
+
+        <div class="preview-panel">
+            <video id="preview-video" controls>
+                <source src="../assets/sample.mp4" type="video/mp4">
+            </video>
+            <div class="controls">
+                <button>&lt;&lt;</button>
+                <button>▶</button>
+                <button>&gt;&gt;</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="timeline">
+        <div class="voiceover-track">Voiceover 波形（ダミー表示）</div>
+        <div class="clip-track">
+            <div class="clip">010</div>
+            <div class="clip">024</div>
+            <div class="clip">016</div>
+        </div>
+    </div>
+</body>
+</html>
