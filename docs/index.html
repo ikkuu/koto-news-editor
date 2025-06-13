@@ -30,17 +30,19 @@
                 <button>&lt;&lt;</button>
                 <button>▶</button>
                 <button>&gt;&gt;</button>
+                <button id="zoom-toggle">タイムライン拡大</button>
             </div>
         </div>
     </div>
 
-    <div class="timeline">
+    <div class="timeline" id="timeline">
         <div class="voiceover-track">Voiceover 波形（ダミー表示）</div>
         <div class="clip-track">
-            <div class="clip">010</div>
-            <div class="clip">024</div>
-            <div class="clip">016</div>
+            <div class="clip" data-start="0" data-duration="2">010</div>
+            <div class="clip" data-start="2" data-duration="3">024</div>
+            <div class="clip" data-start="5" data-duration="1.5">016</div>
         </div>
+        <div id="playhead"></div>
     </div>
 </body>
 </html>
