@@ -24,15 +24,14 @@ body {
 }
 
 .media-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+    display: inline-block;
+    margin: 10px;
+    text-align: center;
+    cursor: grab;
 }
-
-.media-item p {
-  margin: 0.5rem 0 0;
-  font-size: 0.9rem;
-  text-align: center;
+.media-item video {
+    border: 1px solid #ccc;
+    border-radius: 4px;
 }
 .preview-panel {
     width: 70%;
@@ -48,9 +47,17 @@ video {
     margin-top: 5px;
 }
 .timeline {
-    height: 30vh;
-    padding: 10px;
-    background-color: #121212;
+    margin-top: 16px;
+    padding: 8px;
+    border: 2px dashed #aaa;
+    min-height: 60px;
+}
+.timeline-clip {
+    background-color: #eee;
+    border: 1px solid #999;
+    margin: 4px;
+    padding: 4px;
+    display: inline-block;
 }
 .voiceover-track {
     background-color: #0a4c5a;
