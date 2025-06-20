@@ -18,7 +18,13 @@
     <div class="media-panel" id="mediaPanel"></div>
     <div class="preview-panel">
       <video id="preview-video" controls></video>
-      <div class="controls">
+<div class="video-wrapper">
+  <video id="preview-video" controls></video>
+  <div id="timecode-overlay">00:00.0</div>
+</div>
+
+      <audio id="voiceover-audio" src="media/silent_1min.mp3"></audio>
+<div class="controls">
   <button id="play-prev">&lt;&lt;</button>
   <button id="play-timeline">▶</button>  <!-- これに連動させる -->
   <button id="play-next">&gt;&gt;</button>

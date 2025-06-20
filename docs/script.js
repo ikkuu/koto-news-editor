@@ -1,21 +1,12 @@
-// script.js
-
 // === 動画素材ファイル名一覧 ===
-const mediaFiles = [
-    '001.mp4',
-    '002.mp4',
-    '003.mp4',
-    '004.mp4'
-    // 今後もここに追加するだけでOK
-];
-
-// === メディアパネルに素材を表示 ===
+const mediaFiles = ['001.mp4', '002.mp4', '003.mp4', '004.mp4'];
 const mediaPanel = document.getElementById('mediaPanel');
 
+// === 素材一覧の表示 ===
 mediaFiles.forEach(file => {
     const container = document.createElement('div');
     container.className = 'media-item';
-    container.draggable = true; // タイムラインへのD&D用
+    container.draggable = true;
 
     const video = document.createElement('video');
     video.src = `media/${file}`;
@@ -32,21 +23,20 @@ mediaFiles.forEach(file => {
     mediaPanel.appendChild(container);
 });
 
-// === タイムラインへのドラッグ&ドロップ設定 ===
+// === タイムラインへのD&D設定 ===
 const timeline = document.getElementById('timeline');
 
 mediaPanel.addEventListener('dragstart', (e) => {
-    if (e.target.closest('.media-item')) {
-        const fileName = e.target.closest('.media-item').querySelector('div').textContent;
+    const target = e.target.closest('.media-item');
+    if (target) {
+        const fileName = target.querySelector('div').textContent;
         e.dataTransfer.setData('text/plain', fileName);
     }
 });
 
-timeline.addEventListener('dragover', (e) => {
-    e.preventDefault();
-});
+timeline.addEventListener('dragover', (e) => e.preventDefault());
 
-timeline.addEventListener('drop', async (e) => {
+timeline.addEventListener('drop', (e) => {
     e.preventDefault();
     const fileName = e.dataTransfer.getData('text/plain');
 
@@ -73,6 +63,7 @@ timeline.addEventListener('drop', async (e) => {
 
         clip.appendChild(label);
         timeline.appendChild(clip);
+        updateClipWidthsAndTimecode();
     });
 });
 
@@ -101,11 +92,12 @@ function updateClipWidthsAndTimecode() {
     renderTimecodeBar(60, pixelsPerSecond);
 }
 
-// === タイムコードバー生成 ===
+// === タイムコードバー ===
 function renderTimecodeBar(durationSeconds = 60, pixelsPerSecond = 20) {
     const timecodeBar = document.getElementById('timecode-bar');
-    timecodeBar.innerHTML = '';
+    if (!timecodeBar) return;
 
+    timecodeBar.innerHTML = '';
     for (let i = 0; i <= durationSeconds; i++) {
         const label = document.createElement('div');
         label.className = 'timecode-label';
@@ -116,8 +108,9 @@ function renderTimecodeBar(durationSeconds = 60, pixelsPerSecond = 20) {
 }
 renderTimecodeBar(60, 20);
 
-// === タイムライン再生（in〜outのみ再生） ===
-const preview = document.getElementById('preview-video');
+// === プレビュー & 音声再生制御 ===
+const previewVideo = document.getElementById('preview-video');
+const voiceoverAudio = document.getElementById('voiceover-audio');
 const playBtn = document.getElementById('play-timeline');
 
 playBtn.addEventListener('click', () => {
@@ -127,35 +120,59 @@ playBtn.addEventListener('click', () => {
     let currentIndex = 0;
 
     function playNextClip() {
-        if (currentIndex >= clips.length) return;
+        if (currentIndex >= clips.length) {
+            previewVideo.pause();
+            voiceoverAudio.pause();
+            return;
+        }
 
         const clip = clips[currentIndex];
         const fileName = clip.querySelector('.clip-label').textContent.trim();
         const inTime = parseFloat(clip.dataset.in) || 0;
         const outTime = parseFloat(clip.dataset.out) || 0;
 
-        preview.src = `media/${fileName}`;
-        preview.currentTime = inTime;
+        previewVideo.src = `media/${fileName}`;
+        previewVideo.currentTime = inTime;
+        voiceoverAudio.currentTime = inTime;
 
-        preview.onloadedmetadata = () => {
-            preview.currentTime = inTime;
-            preview.play();
+        previewVideo.onloadedmetadata = () => {
+            previewVideo.play();
+            voiceoverAudio.play();
 
             const checkPlayback = () => {
-                if (preview.currentTime >= outTime || preview.ended) {
-                    preview.pause();
-                    preview.removeEventListener('timeupdate', checkPlayback);
+                if (previewVideo.currentTime >= outTime || previewVideo.ended) {
+                    previewVideo.pause();
+                    voiceoverAudio.pause();
+                    previewVideo.removeEventListener('timeupdate', checkPlayback);
                     currentIndex++;
                     playNextClip();
                 }
             };
 
-            preview.addEventListener('timeupdate', checkPlayback);
+            previewVideo.addEventListener('timeupdate', () => {
+                const diff = Math.abs(previewVideo.currentTime - voiceoverAudio.currentTime);
+                if (diff > 0.1) {
+                    voiceoverAudio.currentTime = previewVideo.currentTime;
+                }
+            });
+
+            previewVideo.addEventListener('timeupdate', checkPlayback);
         };
     }
 
     playNextClip();
 });
 
-// 初期表示調整
+// === 初期化 ===
 updateClipWidthsAndTimecode();
+
+const timeOverlay = document.getElementById('timecode-overlay');
+const previewVideo = document.getElementById('preview-video');
+
+previewVideo.addEventListener('timeupdate', () => {
+    const t = previewVideo.currentTime;
+    const minutes = Math.floor(t / 60).toString().padStart(2, '0');
+    const seconds = Math.floor(t % 60).toString().padStart(2, '0');
+    const decimal = Math.floor((t % 1) * 10);
+    timeOverlay.textContent = `${minutes}:${seconds}.${decimal}`;
+});
