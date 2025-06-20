@@ -1,68 +1,36 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <title>簡易編集ツール</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="script.js" defer></script>
+  <meta charset="UTF-8" />
+  <title>簡易編集ツール</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="script.js" defer></script>
 </head>
 <body>
-    <div class="header">
-        <button>保存</button>
-        <button>読み込み</button>
-        <button>書き出し</button>
-        <button id="play-all">全素材を連続再生</button>
-    </div>
-
-   <div class="editor-container">
- <div class="media-panel" id="mediaPanel"></div>
+  <div class="header">
+    <button>保存</button>
+    <button>読み込み</button>
+    <button>書き出し</button>
+    <button id="play-all">全素材を連続再生</button>
   </div>
 
-  <div class="preview-panel">
-    <!-- 編集対象の動画表示用 -->
-    <video id="preview-video" controls></video>
+  <div class="main-layout">
+    <div class="media-panel" id="mediaPanel"></div>
+    <div class="preview-panel">
+      <video id="preview-video" controls></video>
+      <div class="controls">
+        <button>&lt;&lt;</button>
+        <button>▶</button>
+        <button>&gt;&gt;</button>
+        <button id="zoom-toggle">タイムライン拡大</button>
+      </div>
+    </div>
   </div>
-</div>
 
-        <div class="preview-panel">
-            <video id="preview-video" controls>
-                <source src="../assets/sample.mp4" type="video/mp4">
-            </video>
-            <div class="controls">
-                <button>&lt;&lt;</button>
-                <button>▶</button>
-                <button>&gt;&gt;</button>
-                <button id="zoom-toggle">タイムライン拡大</button>
-            </div>
-        </div>
-    </div>
-
-    <div class="timeline" id="timeline">
-        <div class="voiceover-track">Voiceover 波形（ダミー表示）</div>
-        <div class="clip-track">
-            <div class="clip" data-start="0" data-duration="2">010</div>
-            <div class="clip" data-start="2" data-duration="3">024</div>
-            <div class="clip" data-start="5" data-duration="1.5">016</div>
-        </div>
-        <div id="playhead"></div>
-    </div>
-<h2>① H.264（MP4）</h2>
-<video controls>
-  <source src="media/001.mp4" type="video/mp4">
-  このブラウザでは H.264 MP4 が再生できません。
-</video>
-
-<h2>② H.265（MP4）</h2>
-<video controls>
-  <source src="media/001265.mp4" type="video/mp4; codecs=hevc">
-  このブラウザでは H.265 MP4 が再生できません。
-</video>
-
-<h2>③ MOV形式</h2>
-<video controls>
-  <source src="media/001.mov" type="video/quicktime">
-  このブラウザでは MOV が再生できません。
-</video>
-
+  <div class="timeline" id="timeline">
+    <div class="voiceover-track">Voiceover 波形（ダミー表示）</div>
+    <div class="clip-track"></div>
+    <div id="playhead"></div>
+  </div>
 </body>
 </html>
