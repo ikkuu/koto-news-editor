@@ -14,13 +14,27 @@
         <button id="play-all">全素材を連続再生</button>
     </div>
 
-    <div class="editor-container">
-        <div class="media-panel">
-            <div class="media-item">010</div>
-            <div class="media-item">016</div>
-            <div class="media-item">022</div>
-            <div class="media-item">018</div>
-        </div>
+   <div class="editor-container">
+  <div class="media-panel">
+    <div class="media-item">
+      <video src="media/001.mp4" width="160" muted></video>
+      <p>001.mp4</p>
+    </div>
+    <div class="media-item">
+      <video src="media/001265.mp4" width="160" muted></video>
+      <p>001265.mp4</p>
+    </div>
+    <div class="media-item">
+      <video src="media/001.mov" width="160" muted></video>
+      <p>001.mov</p>
+    </div>
+  </div>
+
+  <div class="preview-panel">
+    <!-- 編集対象の動画表示用 -->
+    <video id="preview-video" controls></video>
+  </div>
+</div>
 
         <div class="preview-panel">
             <video id="preview-video" controls>
