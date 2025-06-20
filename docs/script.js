@@ -174,3 +174,46 @@ timeline.addEventListener('mousedown', (e) => {
     document.addEventListener('mousemove', onMouseMove);
     document.addEventListener('mouseup', onMouseUp);
 });
+
+// === タイムラインクリップ：ドラッグ＆ドロップで並び替え ===
+let draggedClip = null;
+
+document.querySelector('.clip-track').addEventListener('dragstart', (e) => {
+    if (e.target.classList.contains('timeline-clip')) {
+        draggedClip = e.target;
+        e.dataTransfer.effectAllowed = 'move';
+    }
+});
+
+document.querySelector('.clip-track').addEventListener('dragover', (e) => {
+    e.preventDefault();
+    const target = e.target.closest('.timeline-clip');
+    if (target && target !== draggedClip) {
+        const bounding = target.getBoundingClientRect();
+        const offset = e.clientX - bounding.left;
+        const midline = bounding.width / 2;
+
+        const parent = target.parentElement;
+        if (offset > midline) {
+            parent.insertBefore(draggedClip, target.nextSibling);
+        } else {
+            parent.insertBefore(draggedClip, target);
+        }
+    }
+});
+
+document.querySelector('.clip-track').addEventListener('dragend', () => {
+    draggedClip = null;
+});
+
+// === タイムラインクリップ：右クリックで削除 ===
+document.querySelector('.clip-track').addEventListener('contextmenu', (e) => {
+    if (e.target.closest('.timeline-clip')) {
+        e.preventDefault();
+        const clip = e.target.closest('.timeline-clip');
+        const label = clip.querySelector('.clip-label')?.textContent || 'このクリップ';
+        if (confirm(`${label} を削除しますか？`)) {
+            clip.remove();
+        }
+    }
+});
