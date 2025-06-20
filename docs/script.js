@@ -1,21 +1,19 @@
-// script.js
-
-// === 動画素材ファイル名一覧 ===
+// === 素材ファイル一覧 ===
 const mediaFiles = [
     '001.mp4',
     '002.mp4',
     '003.mp4',
     '004.mp4'
-    // 今後もここに追加するだけでOK
+    // 追加するだけで自動反映
 ];
 
-// === メディアパネルに素材を表示 ===
+// === 素材パネルに動画を表示 ===
 const mediaPanel = document.getElementById('mediaPanel');
 
 mediaFiles.forEach(file => {
     const container = document.createElement('div');
     container.className = 'media-item';
-    container.draggable = true; // タイムラインへのD&D用
+    container.draggable = true;
 
     const video = document.createElement('video');
     video.src = `media/${file}`;
@@ -32,12 +30,10 @@ mediaFiles.forEach(file => {
     mediaPanel.appendChild(container);
 });
 
-// === 今後の拡張予定 ===
-
-// - タイムラインへのドロップイベント
+// === タイムラインへのドラッグ＆ドロップ ===
 const timeline = document.getElementById('timeline');
 
-// ドラッグ開始時に素材名をデータとして持たせる
+// ドラッグ開始
 mediaPanel.addEventListener('dragstart', (e) => {
     if (e.target.closest('.media-item')) {
         const fileName = e.target.closest('.media-item').querySelector('div').textContent;
@@ -45,13 +41,13 @@ mediaPanel.addEventListener('dragstart', (e) => {
     }
 });
 
-// タイムライン上でドロップを許可
+// ドラッグオーバー許可
 timeline.addEventListener('dragover', (e) => {
     e.preventDefault();
 });
 
-// タイムラインにドロップされた時の処理
-timeline.addEventListener('drop', async (e) => {
+// ドロップされた時にタイムラインに素材を追加
+timeline.addEventListener('drop', (e) => {
     e.preventDefault();
     const fileName = e.dataTransfer.getData('text/plain');
 
@@ -60,63 +56,78 @@ timeline.addEventListener('drop', async (e) => {
     video.preload = 'metadata';
     video.muted = true;
 
-    // 尺（duration）取得して横幅を決める
     video.addEventListener('loadedmetadata', () => {
-        const duration = video.duration; // 秒
-        const width = Math.max(duration * 10, 50); // 仮のスケール 10px/sec、最小幅50px
+        const duration = video.duration;
+        const width = Math.max(duration * 10, 50); // 仮：10px/秒
 
         const clip = document.createElement('div');
         clip.className = 'timeline-clip';
         clip.textContent = fileName;
+        clip.dataset.duration = duration.toFixed(2);
         clip.style.width = `${width}px`;
 
-        timeline.appendChild(clip);
+        const clipTrack = document.querySelector('.clip-track');
+        clipTrack.appendChild(clip);
     });
 });
 
-// - ドロップされた素材の尺を取得し、横幅に比例表示
-// - イン・アウト調整可能なトリミングバー
+// === プレビュー再生制御 ===
+const preview = document.getElementById('preview-video');
+const playBtn = document.getElementById('play-timeline');
 
-// 必要に応じて、タイムライン用要素取得やドロップ処理などをこの下に追加していく予定
+playBtn.addEventListener('click', () => {
+    const clips = document.querySelectorAll('.timeline-clip');
+    const fileList = Array.from(clips).map(clip => clip.textContent.trim());
 
-// タイムラインの表示制御と再生インジケーターの同期スクリプト（基本構造）
+    if (fileList.length === 0) return;
 
+    let currentIndex = 0;
+
+    function playNext() {
+        if (currentIndex >= fileList.length) return;
+
+        const file = fileList[currentIndex];
+        preview.src = `media/${file}`;
+        preview.play();
+
+        preview.onended = () => {
+            currentIndex++;
+            playNext();
+        };
+    }
+
+    playNext();
+});
+
+// === プレイヘッドとズーム制御（ベース） ===
 const timelineContainer = document.getElementById('timeline');
-const monitorVideo = document.getElementById('video-monitor');
-const playhead = document.getElementById('playhead'); // 再生位置を示すバー
-const timelineClips = document.querySelectorAll('.timeline-clip');
+const playhead = document.getElementById('playhead');
 const zoomToggle = document.getElementById('zoom-toggle');
 
-// タイムライン全体の幅（ピクセル）
-const TIMELINE_WIDTH_FULL = 1000; // 全体表示
-const TIMELINE_WIDTH_ZOOM = 5000; // 拡大表示（スクロールあり）
-
+const TIMELINE_WIDTH_FULL = 1000;
+const TIMELINE_WIDTH_ZOOM = 5000;
 let isZoomed = false;
 
-// タイムライン表示切替
 zoomToggle.addEventListener('click', () => {
     isZoomed = !isZoomed;
     timelineContainer.style.width = isZoomed ? `${TIMELINE_WIDTH_ZOOM}px` : `${TIMELINE_WIDTH_FULL}px`;
     updateClipWidths();
 });
 
-// クリップの横幅を動画の時間に応じて調整（仮に1秒=100pxとする）
 function updateClipWidths() {
-    timelineClips.forEach(clip => {
-        const duration = parseFloat(clip.dataset.duration); // 例: data-duration="2.5"
-        const pixelsPerSecond = isZoomed ? 100 : 20; // 拡大時と通常時でピクセル幅変更
+    const clips = document.querySelectorAll('.timeline-clip');
+    clips.forEach(clip => {
+        const duration = parseFloat(clip.dataset.duration);
+        const pixelsPerSecond = isZoomed ? 100 : 20;
         clip.style.width = `${duration * pixelsPerSecond}px`;
     });
 }
 
-// 動画の再生位置とタイムライン上の再生バーを同期
-monitorVideo.addEventListener('timeupdate', () => {
-    const duration = monitorVideo.duration;
-    const currentTime = monitorVideo.currentTime;
+// 再生バー（プレイヘッド）同期
+preview.addEventListener('timeupdate', () => {
+    const duration = preview.duration;
+    const currentTime = preview.currentTime;
     const percentage = currentTime / duration;
     const timelineWidth = isZoomed ? TIMELINE_WIDTH_ZOOM : TIMELINE_WIDTH_FULL;
     playhead.style.left = `${percentage * timelineWidth}px`;
 });
-
-// 初期実行
-updateClipWidths();
