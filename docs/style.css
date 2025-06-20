@@ -91,3 +91,38 @@ video {
   top: 0;
   left: 0;
 }
+
+.timeline-clip {
+  background-color: #444;
+  border: 1px solid #888;
+  margin: 4px;
+  padding: 4px;
+  display: inline-block;
+  position: relative;
+  height: 40px;
+  color: white;
+}
+
+.clip-label {
+  text-align: center;
+  white-space: nowrap;
+}
+
+.handle {
+  position: absolute;
+  width: 8px;
+  top: 0;
+  bottom: 0;
+  background-color: red;
+  cursor: ew-resize;
+  z-index: 10;
+}
+
+.handle-left {
+  left: 0;
+}
+
+.handle-right {
+  right: 0;
+}
+
