@@ -217,3 +217,40 @@ document.querySelector('.clip-track').addEventListener('contextmenu', (e) => {
         }
     }
 });
+
+function renderTimecodeBar(durationSeconds = 60, pixelsPerSecond = 20) {
+    const timecodeBar = document.getElementById('timecode-bar');
+    timecodeBar.innerHTML = ''; // 一旦リセット
+
+    for (let i = 0; i <= durationSeconds; i++) {
+        const label = document.createElement('div');
+        label.className = 'timecode-label';
+        label.textContent = `${i}s`;
+        label.style.minWidth = `${pixelsPerSecond}px`;
+        timecodeBar.appendChild(label);
+    }
+}
+
+// 初期表示（1秒20px, 60秒分）
+renderTimecodeBar(60, 20);
+
+// ズーム切替に連動
+function updateClipWidthsAndTimecode() {
+    const clips = document.querySelectorAll('.timeline-clip');
+    const pixelsPerSecond = isZoomed ? 100 : 20;
+
+    clips.forEach(clip => {
+        const duration = parseFloat(clip.dataset.duration);
+        clip.style.width = `${duration * pixelsPerSecond}px`;
+    });
+
+    renderTimecodeBar(60, pixelsPerSecond);
+}
+
+// 既存のズーム切替イベントを差し替え
+zoomToggle.addEventListener('click', () => {
+    isZoomed = !isZoomed;
+    timelineContainer.style.width = isZoomed ? `${TIMELINE_WIDTH_ZOOM}px` : `${TIMELINE_WIDTH_FULL}px`;
+    updateClipWidthsAndTimecode();
+});
+
