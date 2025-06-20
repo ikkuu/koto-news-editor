@@ -1,18 +1,21 @@
-// === 素材ファイル一覧 ===
+// script.js
+
+// === 動画素材ファイル名一覧 ===
 const mediaFiles = [
     '001.mp4',
     '002.mp4',
     '003.mp4',
     '004.mp4'
+    // 今後もここに追加するだけでOK
 ];
 
-// === 素材パネルに動画を表示 ===
+// === メディアパネルに素材を表示 ===
 const mediaPanel = document.getElementById('mediaPanel');
 
 mediaFiles.forEach(file => {
     const container = document.createElement('div');
     container.className = 'media-item';
-    container.draggable = true;
+    container.draggable = true; // タイムラインへのD&D用
 
     const video = document.createElement('video');
     video.src = `media/${file}`;
@@ -29,7 +32,7 @@ mediaFiles.forEach(file => {
     mediaPanel.appendChild(container);
 });
 
-// === タイムラインへのドラッグ＆ドロップ ===
+// === タイムラインへのドラッグ&ドロップ設定 ===
 const timeline = document.getElementById('timeline');
 
 mediaPanel.addEventListener('dragstart', (e) => {
@@ -43,7 +46,7 @@ timeline.addEventListener('dragover', (e) => {
     e.preventDefault();
 });
 
-timeline.addEventListener('drop', (e) => {
+timeline.addEventListener('drop', async (e) => {
     e.preventDefault();
     const fileName = e.dataTransfer.getData('text/plain');
 
@@ -54,61 +57,28 @@ timeline.addEventListener('drop', (e) => {
 
     video.addEventListener('loadedmetadata', () => {
         const duration = video.duration;
-        const width = Math.max(duration * 10, 50); // 表示上の仮サイズ
+        const inPoint = 0;
+        const outPoint = duration;
+        const width = Math.max(duration * 10, 50);
 
         const clip = document.createElement('div');
         clip.className = 'timeline-clip';
-        clip.dataset.duration = duration.toFixed(2);
-        clip.dataset.in = "0";
-        clip.dataset.out = duration.toFixed(2);
+        clip.dataset.in = inPoint;
+        clip.dataset.out = outPoint;
+        clip.dataset.duration = duration;
 
-        clip.innerHTML = `
-          <div class="handle handle-left"></div>
-          <div class="clip-label">${fileName}</div>
-          <div class="handle handle-right"></div>
-        `;
+        const label = document.createElement('div');
+        label.className = 'clip-label';
+        label.textContent = fileName;
 
-        clip.style.width = `${width}px`;
-        clip.style.position = 'relative';
-
-        const clipTrack = document.querySelector('.clip-track');
-        clipTrack.appendChild(clip);
+        clip.appendChild(label);
+        timeline.appendChild(clip);
     });
 });
 
-// === プレビュー再生機能（タイムライン順に再生） ===
-const preview = document.getElementById('preview-video');
-const playBtn = document.getElementById('play-timeline');
-
-playBtn.addEventListener('click', () => {
-    const clips = document.querySelectorAll('.timeline-clip');
-    const fileList = Array.from(clips).map(clip => clip.querySelector('.clip-label').textContent.trim());
-
-    if (fileList.length === 0) return;
-
-    let currentIndex = 0;
-
-    function playNext() {
-        if (currentIndex >= fileList.length) return;
-
-        const file = fileList[currentIndex];
-        preview.src = `media/${file}`;
-        preview.play();
-
-        preview.onended = () => {
-            currentIndex++;
-            playNext();
-        };
-    }
-
-    playNext();
-});
-
-// === タイムラインのズーム切り替え ===
+// === タイムライン拡大・縮小制御 ===
 const timelineContainer = document.getElementById('timeline');
-const playhead = document.getElementById('playhead');
 const zoomToggle = document.getElementById('zoom-toggle');
-
 const TIMELINE_WIDTH_FULL = 1000;
 const TIMELINE_WIDTH_ZOOM = 5000;
 let isZoomed = false;
@@ -116,125 +86,9 @@ let isZoomed = false;
 zoomToggle.addEventListener('click', () => {
     isZoomed = !isZoomed;
     timelineContainer.style.width = isZoomed ? `${TIMELINE_WIDTH_ZOOM}px` : `${TIMELINE_WIDTH_FULL}px`;
-    updateClipWidths();
+    updateClipWidthsAndTimecode();
 });
 
-function updateClipWidths() {
-    const clips = document.querySelectorAll('.timeline-clip');
-    clips.forEach(clip => {
-        const duration = parseFloat(clip.dataset.duration);
-        const pixelsPerSecond = isZoomed ? 100 : 20;
-        clip.style.width = `${duration * pixelsPerSecond}px`;
-    });
-}
-
-// === プレイヘッド表示
-preview.addEventListener('timeupdate', () => {
-    const duration = preview.duration;
-    const currentTime = preview.currentTime;
-    const percentage = currentTime / duration;
-    const timelineWidth = isZoomed ? TIMELINE_WIDTH_ZOOM : TIMELINE_WIDTH_FULL;
-    playhead.style.left = `${percentage * timelineWidth}px`;
-});
-
-// === イン／アウト調整ハンドル（マウス操作） ===
-timeline.addEventListener('mousedown', (e) => {
-    const handle = e.target.closest('.handle');
-    if (!handle) return;
-
-    const clip = handle.parentElement;
-    const startX = e.clientX;
-    const initialWidth = clip.offsetWidth;
-    const isLeft = handle.classList.contains('handle-left');
-
-    const onMouseMove = (e) => {
-        const deltaX = e.clientX - startX;
-        let newWidth = isLeft ? initialWidth - deltaX : initialWidth + deltaX;
-        const minWidth = 30;
-
-        if (newWidth < minWidth) newWidth = minWidth;
-        clip.style.width = `${newWidth}px`;
-
-        const fullDuration = parseFloat(clip.dataset.duration);
-        const ratio = newWidth / initialWidth;
-        if (isLeft) {
-            const newIn = fullDuration * (1 - ratio);
-            clip.dataset.in = Math.max(0, newIn).toFixed(2);
-        } else {
-            const newOut = fullDuration * ratio;
-            clip.dataset.out = Math.min(fullDuration, newOut).toFixed(2);
-        }
-    };
-
-    const onMouseUp = () => {
-        document.removeEventListener('mousemove', onMouseMove);
-        document.removeEventListener('mouseup', onMouseUp);
-    };
-
-    document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener('mouseup', onMouseUp);
-});
-
-// === タイムラインクリップ：ドラッグ＆ドロップで並び替え ===
-let draggedClip = null;
-
-document.querySelector('.clip-track').addEventListener('dragstart', (e) => {
-    if (e.target.classList.contains('timeline-clip')) {
-        draggedClip = e.target;
-        e.dataTransfer.effectAllowed = 'move';
-    }
-});
-
-document.querySelector('.clip-track').addEventListener('dragover', (e) => {
-    e.preventDefault();
-    const target = e.target.closest('.timeline-clip');
-    if (target && target !== draggedClip) {
-        const bounding = target.getBoundingClientRect();
-        const offset = e.clientX - bounding.left;
-        const midline = bounding.width / 2;
-
-        const parent = target.parentElement;
-        if (offset > midline) {
-            parent.insertBefore(draggedClip, target.nextSibling);
-        } else {
-            parent.insertBefore(draggedClip, target);
-        }
-    }
-});
-
-document.querySelector('.clip-track').addEventListener('dragend', () => {
-    draggedClip = null;
-});
-
-// === タイムラインクリップ：右クリックで削除 ===
-document.querySelector('.clip-track').addEventListener('contextmenu', (e) => {
-    if (e.target.closest('.timeline-clip')) {
-        e.preventDefault();
-        const clip = e.target.closest('.timeline-clip');
-        const label = clip.querySelector('.clip-label')?.textContent || 'このクリップ';
-        if (confirm(`${label} を削除しますか？`)) {
-            clip.remove();
-        }
-    }
-});
-
-function renderTimecodeBar(durationSeconds = 60, pixelsPerSecond = 20) {
-    const timecodeBar = document.getElementById('timecode-bar');
-    timecodeBar.innerHTML = ''; // 一旦リセット
-
-    for (let i = 0; i <= durationSeconds; i++) {
-        const label = document.createElement('div');
-        label.className = 'timecode-label';
-        label.textContent = `${i}s`;
-        label.style.minWidth = `${pixelsPerSecond}px`;
-        timecodeBar.appendChild(label);
-    }
-}
-
-// 初期表示（1秒20px, 60秒分）
-renderTimecodeBar(60, 20);
-
-// ズーム切替に連動
 function updateClipWidthsAndTimecode() {
     const clips = document.querySelectorAll('.timeline-clip');
     const pixelsPerSecond = isZoomed ? 100 : 20;
@@ -247,10 +101,61 @@ function updateClipWidthsAndTimecode() {
     renderTimecodeBar(60, pixelsPerSecond);
 }
 
-// 既存のズーム切替イベントを差し替え
-zoomToggle.addEventListener('click', () => {
-    isZoomed = !isZoomed;
-    timelineContainer.style.width = isZoomed ? `${TIMELINE_WIDTH_ZOOM}px` : `${TIMELINE_WIDTH_FULL}px`;
-    updateClipWidthsAndTimecode();
+// === タイムコードバー生成 ===
+function renderTimecodeBar(durationSeconds = 60, pixelsPerSecond = 20) {
+    const timecodeBar = document.getElementById('timecode-bar');
+    timecodeBar.innerHTML = '';
+
+    for (let i = 0; i <= durationSeconds; i++) {
+        const label = document.createElement('div');
+        label.className = 'timecode-label';
+        label.textContent = `${i}s`;
+        label.style.minWidth = `${pixelsPerSecond}px`;
+        timecodeBar.appendChild(label);
+    }
+}
+renderTimecodeBar(60, 20);
+
+// === タイムライン再生（in〜outのみ再生） ===
+const preview = document.getElementById('preview-video');
+const playBtn = document.getElementById('play-timeline');
+
+playBtn.addEventListener('click', () => {
+    const clips = document.querySelectorAll('.timeline-clip');
+    if (clips.length === 0) return;
+
+    let currentIndex = 0;
+
+    function playNextClip() {
+        if (currentIndex >= clips.length) return;
+
+        const clip = clips[currentIndex];
+        const fileName = clip.querySelector('.clip-label').textContent.trim();
+        const inTime = parseFloat(clip.dataset.in) || 0;
+        const outTime = parseFloat(clip.dataset.out) || 0;
+
+        preview.src = `media/${fileName}`;
+        preview.currentTime = inTime;
+
+        preview.onloadedmetadata = () => {
+            preview.currentTime = inTime;
+            preview.play();
+
+            const checkPlayback = () => {
+                if (preview.currentTime >= outTime || preview.ended) {
+                    preview.pause();
+                    preview.removeEventListener('timeupdate', checkPlayback);
+                    currentIndex++;
+                    playNextClip();
+                }
+            };
+
+            preview.addEventListener('timeupdate', checkPlayback);
+        };
+    }
+
+    playNextClip();
 });
 
+// 初期表示調整
+updateClipWidthsAndTimecode();
