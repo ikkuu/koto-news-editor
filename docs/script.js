@@ -41,7 +41,7 @@ mediaFiles.forEach(file => {
   container.draggable = true;
 
   const video = document.createElement('video');
-  video.src = `media/${file}`;
+  video.src = `docs/media/${file}`;
   video.muted = true;
   video.preload = 'metadata';
   video.width = 160;
@@ -67,7 +67,7 @@ timeline.addEventListener('drop', async (e) => {
   const fileName = e.dataTransfer.getData('text/plain');
 
   const video = document.createElement('video');
-  video.src = `media/${fileName}`;
+  video.src = `docs/media/${fileName}`;
   video.preload = 'metadata';
   video.muted = true;
 
@@ -165,7 +165,7 @@ playBtn.addEventListener('click', () => {
     const inTime = parseFloat(clip.dataset.in);
     const outTime = parseFloat(clip.dataset.out);
 
-    previewVideo.src = `media/${fileName}`;
+    previewVideo.src = `docs/media/${fileName}`;
     previewVideo.currentTime = inTime;
 
     previewVideo.onloadedmetadata = () => {
