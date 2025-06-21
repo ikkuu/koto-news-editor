@@ -1,5 +1,3 @@
-// script.js
-
 // === 動画素材ファイル名一覧 ===
 const mediaFiles = [
   '001.mp4',
@@ -41,15 +39,14 @@ mediaFiles.forEach(file => {
 });
 
 // === タイムラインへのD&D ===
-const timeline = document.querySelector('.clip-track'); // 変更点
+const timeline = document.querySelector('.clip-track');
 
 timeline.addEventListener('dragover', (e) => e.preventDefault());
 
 timeline.addEventListener('drop', async (e) => {
   e.preventDefault();
   const fileName = e.dataTransfer.getData('text/plain');
-  // （以下、既存の drop 処理をそのまま）
-});
+
   const video = document.createElement('video');
   video.src = `docs/media/${fileName}`;
   video.preload = 'metadata';
@@ -80,9 +77,14 @@ timeline.addEventListener('drop', async (e) => {
     clip.appendChild(label);
     timeline.appendChild(clip);
 
-    setupHandleDrag(clip, leftHandle, 'left');
-    setupHandleDrag(clip, rightHandle, 'right');
-    updateClipWidthsAndTimecode();
+    if (typeof setupHandleDrag === 'function') {
+      setupHandleDrag(clip, leftHandle, 'left');
+      setupHandleDrag(clip, rightHandle, 'right');
+    }
+
+    if (typeof updateClipWidthsAndTimecode === 'function') {
+      updateClipWidthsAndTimecode();
+    }
   });
 });
 
@@ -94,8 +96,10 @@ const TIMELINE_WIDTH_ZOOM = 5000;
 
 zoomToggle.addEventListener('click', () => {
   isZoomed = !isZoomed;
-  timeline.style.width = isZoomed ? TIMELINE_WIDTH_ZOOM + 'px' : TIMELINE_WIDTH_FULL + 'px';
-  updateClipWidthsAndTimecode();
+  timeline.style.width = isZoomed ? `${TIMELINE_WIDTH_ZOOM}px` : `${TIMELINE_WIDTH_FULL}px`;
+  if (typeof updateClipWidthsAndTimecode === 'function') {
+    updateClipWidthsAndTimecode();
+  }
 });
 
 // === クリップ幅とタイムコードバー更新 ===
