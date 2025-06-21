@@ -153,6 +153,13 @@ video {
     display: inline-block;
 }
 
+.clip-track {
+  display: flex;
+  gap: 5px;
+  position: relative;
+  z-index: 2;
+}
+
 #timecode-overlay {
     position: absolute;
     bottom: 8px;
