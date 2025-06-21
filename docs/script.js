@@ -1,178 +1,224 @@
+
+// script.js
+
 // === 動画素材ファイル名一覧 ===
-const mediaFiles = ['001.mp4', '002.mp4', '003.mp4', '004.mp4'];
+const mediaFiles = [
+  '001.mp4',
+  '002.mp4',
+  '003.mp4',
+  '004.mp4'
+];
+
+// === メディアパネルに素材を表示 ===
 const mediaPanel = document.getElementById('mediaPanel');
 
-// === 素材一覧の表示 ===
 mediaFiles.forEach(file => {
-    const container = document.createElement('div');
-    container.className = 'media-item';
-    container.draggable = true;
+  const container = document.createElement('div');
+  container.className = 'media-item';
+  container.draggable = true;
 
-    const video = document.createElement('video');
-    video.src = `media/${file}`;
-    video.muted = true;
-    video.preload = 'metadata';
-    video.width = 160;
-    video.height = 90;
+  const video = document.createElement('video');
+  video.src = `docs/media/${file}`;
+  video.muted = true;
+  video.preload = 'metadata';
+  video.width = 160;
+  video.height = 90;
 
-    const label = document.createElement('div');
-    label.textContent = file;
+  const label = document.createElement('div');
+  label.textContent = file;
 
-    container.appendChild(video);
-    container.appendChild(label);
-    mediaPanel.appendChild(container);
+  container.appendChild(video);
+  container.appendChild(label);
+  mediaPanel.appendChild(container);
 });
 
-// === タイムラインへのD&D設定 ===
+// === タイムラインへのD&D ===
 const timeline = document.getElementById('timeline');
 
 mediaPanel.addEventListener('dragstart', (e) => {
-    const target = e.target.closest('.media-item');
-    if (target) {
-        const fileName = target.querySelector('div').textContent;
-        e.dataTransfer.setData('text/plain', fileName);
-    }
+  if (e.target.closest('.media-item')) {
+    const fileName = e.target.closest('.media-item').querySelector('div').textContent;
+    e.dataTransfer.setData('text/plain', fileName);
+  }
 });
 
 timeline.addEventListener('dragover', (e) => e.preventDefault());
 
-timeline.addEventListener('drop', (e) => {
-    e.preventDefault();
-    const fileName = e.dataTransfer.getData('text/plain');
+timeline.addEventListener('drop', async (e) => {
+  e.preventDefault();
+  const fileName = e.dataTransfer.getData('text/plain');
 
-    const video = document.createElement('video');
-    video.src = `media/${fileName}`;
-    video.preload = 'metadata';
-    video.muted = true;
+  const video = document.createElement('video');
+  video.src = `media/${fileName}`;
+  video.preload = 'metadata';
+  video.muted = true;
 
-    video.addEventListener('loadedmetadata', () => {
-        const duration = video.duration;
-        const inPoint = 0;
-        const outPoint = duration;
-        const width = Math.max(duration * 10, 50);
+  video.addEventListener('loadedmetadata', () => {
+    const duration = video.duration;
+    const inPoint = 0;
+    const outPoint = duration;
+    const width = Math.max(duration * 10, 50);
 
-        const clip = document.createElement('div');
-        clip.className = 'timeline-clip';
-        clip.dataset.in = inPoint;
-        clip.dataset.out = outPoint;
-        clip.dataset.duration = duration;
+    const clip = document.createElement('div');
+    clip.className = 'timeline-clip';
+    clip.dataset.in = inPoint;
+    clip.dataset.out = outPoint;
+    clip.dataset.duration = duration;
 
-        const label = document.createElement('div');
-        label.className = 'clip-label';
-        label.textContent = fileName;
+    const label = document.createElement('div');
+    label.className = 'clip-label';
+    label.textContent = fileName;
 
-        clip.appendChild(label);
-        timeline.appendChild(clip);
-        updateClipWidthsAndTimecode();
-    });
+    const leftHandle = document.createElement('div');
+    leftHandle.className = 'handle handle-left';
+    const rightHandle = document.createElement('div');
+    rightHandle.className = 'handle handle-right';
+
+    clip.appendChild(leftHandle);
+    clip.appendChild(rightHandle);
+    clip.appendChild(label);
+    timeline.appendChild(clip);
+
+    setupHandleDrag(clip, leftHandle, 'left');
+    setupHandleDrag(clip, rightHandle, 'right');
+    updateClipWidthsAndTimecode();
+  });
 });
 
 // === タイムライン拡大・縮小制御 ===
-const timelineContainer = document.getElementById('timeline');
 const zoomToggle = document.getElementById('zoom-toggle');
+let isZoomed = false;
 const TIMELINE_WIDTH_FULL = 1000;
 const TIMELINE_WIDTH_ZOOM = 5000;
-let isZoomed = false;
 
 zoomToggle.addEventListener('click', () => {
-    isZoomed = !isZoomed;
-    timelineContainer.style.width = isZoomed ? `${TIMELINE_WIDTH_ZOOM}px` : `${TIMELINE_WIDTH_FULL}px`;
-    updateClipWidthsAndTimecode();
+  isZoomed = !isZoomed;
+  timeline.style.width = isZoomed ? TIMELINE_WIDTH_ZOOM + 'px' : TIMELINE_WIDTH_FULL + 'px';
+  updateClipWidthsAndTimecode();
 });
 
+// === クリップ幅とタイムコードバー更新 ===
 function updateClipWidthsAndTimecode() {
-    const clips = document.querySelectorAll('.timeline-clip');
-    const pixelsPerSecond = isZoomed ? 100 : 20;
+  const clips = document.querySelectorAll('.timeline-clip');
+  const pixelsPerSecond = isZoomed ? 100 : 20;
 
-    clips.forEach(clip => {
-        const duration = parseFloat(clip.dataset.duration);
-        clip.style.width = `${duration * pixelsPerSecond}px`;
-    });
+  clips.forEach(clip => {
+    const duration = parseFloat(clip.dataset.out) - parseFloat(clip.dataset.in);
+    clip.style.width = `${duration * pixelsPerSecond}px`;
+  });
 
-    renderTimecodeBar(60, pixelsPerSecond);
+  renderTimecodeBar(60, pixelsPerSecond);
 }
 
-// === タイムコードバー ===
+// === タイムコードバー生成 ===
 function renderTimecodeBar(durationSeconds = 60, pixelsPerSecond = 20) {
-    const timecodeBar = document.getElementById('timecode-bar');
-    if (!timecodeBar) return;
-
-    timecodeBar.innerHTML = '';
-    for (let i = 0; i <= durationSeconds; i++) {
-        const label = document.createElement('div');
-        label.className = 'timecode-label';
-        label.textContent = `${i}s`;
-        label.style.minWidth = `${pixelsPerSecond}px`;
-        timecodeBar.appendChild(label);
-    }
+  const timecodeBar = document.getElementById('timecode-bar');
+  timecodeBar.innerHTML = '';
+  for (let i = 0; i <= durationSeconds; i++) {
+    const label = document.createElement('div');
+    label.className = 'timecode-label';
+    label.textContent = `${i}s`;
+    label.style.minWidth = `${pixelsPerSecond}px`;
+    timecodeBar.appendChild(label);
+  }
 }
 renderTimecodeBar(60, 20);
 
-// === プレビュー & 音声再生制御 ===
+// === 再生処理 ===
 const previewVideo = document.getElementById('preview-video');
 const voiceoverAudio = document.getElementById('voiceover-audio');
 const playBtn = document.getElementById('play-timeline');
+const timeOverlay = document.getElementById('timecode-overlay');
 
 playBtn.addEventListener('click', () => {
-    const clips = document.querySelectorAll('.timeline-clip');
-    if (clips.length === 0) return;
+  const clips = document.querySelectorAll('.timeline-clip');
+  if (clips.length === 0) return;
 
-    let currentIndex = 0;
+  let currentIndex = 0;
 
-    function playNextClip() {
-        if (currentIndex >= clips.length) {
-            previewVideo.pause();
-            voiceoverAudio.pause();
-            return;
-        }
-
-        const clip = clips[currentIndex];
-        const fileName = clip.querySelector('.clip-label').textContent.trim();
-        const inTime = parseFloat(clip.dataset.in) || 0;
-        const outTime = parseFloat(clip.dataset.out) || 0;
-
-        previewVideo.src = `media/${fileName}`;
-        previewVideo.currentTime = inTime;
-        voiceoverAudio.currentTime = inTime;
-
-        previewVideo.onloadedmetadata = () => {
-            previewVideo.play();
-            voiceoverAudio.play();
-
-            const checkPlayback = () => {
-                if (previewVideo.currentTime >= outTime || previewVideo.ended) {
-                    previewVideo.pause();
-                    voiceoverAudio.pause();
-                    previewVideo.removeEventListener('timeupdate', checkPlayback);
-                    currentIndex++;
-                    playNextClip();
-                }
-            };
-
-            previewVideo.addEventListener('timeupdate', () => {
-                const diff = Math.abs(previewVideo.currentTime - voiceoverAudio.currentTime);
-                if (diff > 0.1) {
-                    voiceoverAudio.currentTime = previewVideo.currentTime;
-                }
-            });
-
-            previewVideo.addEventListener('timeupdate', checkPlayback);
-        };
+  function playNextClip() {
+    if (currentIndex >= clips.length) {
+      voiceoverAudio.pause();
+      return;
     }
 
-    playNextClip();
+    const clip = clips[currentIndex];
+    const fileName = clip.querySelector('.clip-label').textContent.trim();
+    const inTime = parseFloat(clip.dataset.in);
+    const outTime = parseFloat(clip.dataset.out);
+
+    previewVideo.src = `media/${fileName}`;
+    previewVideo.currentTime = inTime;
+
+    previewVideo.onloadedmetadata = () => {
+      previewVideo.currentTime = inTime;
+      previewVideo.play();
+
+      previewVideo.addEventListener('timeupdate', function checkPlayback() {
+        timeOverlay.textContent = formatTimecode(previewVideo.currentTime);
+        if (previewVideo.currentTime >= outTime) {
+          previewVideo.pause();
+          previewVideo.removeEventListener('timeupdate', checkPlayback);
+          currentIndex++;
+          playNextClip();
+        }
+      });
+    };
+  }
+
+  voiceoverAudio.currentTime = 0;
+  voiceoverAudio.play();
+  playNextClip();
 });
 
-// === 初期化 ===
+// === タイムコードフォーマット関数 ===
+function formatTimecode(t) {
+  const minutes = Math.floor(t / 60).toString().padStart(2, '0');
+  const seconds = Math.floor(t % 60).toString().padStart(2, '0');
+  const decimal = Math.floor((t % 1) * 10);
+  return `${minutes}:${seconds}.${decimal}`;
+}
+
+// === インアウト調整ハンドル処理 ===
+function setupHandleDrag(clip, handle, side) {
+  let isDragging = false;
+
+  handle.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    isDragging = true;
+
+    const startX = e.clientX;
+    const startIn = parseFloat(clip.dataset.in);
+    const startOut = parseFloat(clip.dataset.out);
+    const duration = parseFloat(clip.dataset.duration);
+    const pixelsPerSecond = isZoomed ? 100 : 20;
+
+    function onMouseMove(moveEvent) {
+      if (!isDragging) return;
+      const deltaX = moveEvent.clientX - startX;
+      const deltaSeconds = deltaX / pixelsPerSecond;
+
+      if (side === 'left') {
+        const newIn = Math.max(0, Math.min(startOut - 0.1, startIn + deltaSeconds));
+        clip.dataset.in = newIn.toFixed(2);
+      } else {
+        const newOut = Math.min(duration, Math.max(startIn + 0.1, startOut + deltaSeconds));
+        clip.dataset.out = newOut.toFixed(2);
+      }
+
+      updateClipWidthsAndTimecode();
+    }
+
+    function onMouseUp() {
+      isDragging = false;
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    }
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  });
+}
+
+// === 初期実行 ===
 updateClipWidthsAndTimecode();
-
-const timeOverlay = document.getElementById('timecode-overlay');
-const previewVideo = document.getElementById('preview-video');
-
-previewVideo.addEventListener('timeupdate', () => {
-    const t = previewVideo.currentTime;
-    const minutes = Math.floor(t / 60).toString().padStart(2, '0');
-    const seconds = Math.floor(t % 60).toString().padStart(2, '0');
-    const decimal = Math.floor((t % 1) * 10);
-    timeOverlay.textContent = `${minutes}:${seconds}.${decimal}`;
-});
