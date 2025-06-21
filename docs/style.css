@@ -172,9 +172,17 @@ video {
     border-radius: 4px;
 }
 
-.voiceover-track img.waveform {
-    width: 192%; /* 元の画像の2倍に拡大 */
-    height: 100%; /* 高さはそのまま */
-    object-fit: contain;
+#waveform-img {
+  position: absolute;
+  top: 0;
+  left: 0; /* ←ここで0秒に揃える */
+  height: 40px;
+  pointer-events: none;
 }
-
+.voiceover-track {
+  position: relative; /* ←これがないと left: 0 が効かない */
+  background-color: #0a4c5a;
+  margin-bottom: 5px;
+  height: 40px;
+  overflow: hidden;
+}
