@@ -15,23 +15,22 @@
   </div>
 
   <div class="main-layout">
-    <div class="media-panel" id="mediaPanel"></div>
-   <div class="preview-panel">
-  <div class="video-wrapper">
-    <video id="preview-video" controls></video>
-    <div id="timecode-overlay">00:00.0</div>
-  </div>
+   <div class="main-layout">
+  <div id="mediaPanel" class="media-panel"></div>
 
-<audio id="voiceover-audio" src="media/silent_1min.wav"></audio>
-<div class="controls">
+  <div class="preview-panel">
+    <div class="video-wrapper">
+      <video id="preview-video" controls></video>
+      <div id="timecode-overlay"></div>
+    </div>
+    <audio id="voiceover-audio" src="media/silent_1min.wav"></audio>
+    <div class="controls">
+      <button id="play-timeline">▶</button>
+      <button id="zoom-toggle">タイムライン拡大</button>
+    </div>
+  </div>
 </div>
 
-
-      
-  <button id="play-prev">&lt;&lt;</button>
-  <button id="play-timeline">▶</button>  <!-- これに連動させる -->
-  <button id="play-next">&gt;&gt;</button>
-  <button id="zoom-toggle">タイムライン拡大</button>
 </div>
     </div>
   </div>
