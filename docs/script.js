@@ -35,11 +35,29 @@ mediaFiles.forEach(file => {
 // === タイムラインへのD&D ===
 const timeline = document.getElementById('timeline');
 
-mediaPanel.addEventListener('dragstart', (e) => {
-  if (e.target.closest('.media-item')) {
-    const fileName = e.target.closest('.media-item').querySelector('div').textContent;
-    e.dataTransfer.setData('text/plain', fileName);
-  }
+mediaFiles.forEach(file => {
+  const container = document.createElement('div');
+  container.className = 'media-item';
+  container.draggable = true;
+
+  const video = document.createElement('video');
+  video.src = `media/${file}`;
+  video.muted = true;
+  video.preload = 'metadata';
+  video.width = 160;
+  video.height = 90;
+
+  const label = document.createElement('div');
+  label.textContent = file;
+
+  container.appendChild(video);
+  container.appendChild(label);
+  mediaPanel.appendChild(container);
+
+  // ← ここで直接 container に dragstart イベントを追加
+  container.addEventListener('dragstart', (e) => {
+    e.dataTransfer.setData('text/plain', file);
+  });
 });
 
 timeline.addEventListener('dragover', (e) => e.preventDefault());
