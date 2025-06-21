@@ -16,15 +16,18 @@
 
   <div class="main-layout">
     <div class="media-panel" id="mediaPanel"></div>
-    <div class="preview-panel">
-      <video id="preview-video" controls></video>
-<div class="video-wrapper">
-  <video id="preview-video" controls></video>
-  <div id="timecode-overlay">00:00.0</div>
+   <div class="preview-panel">
+  <div class="video-wrapper">
+    <video id="preview-video" controls></video>
+    <div id="timecode-overlay">00:00.0</div>
+  </div>
+
+<audio id="voiceover-audio" src="media/silent_1min.wav"></audio>
+<div class="controls">
 </div>
 
-      <audio id="voiceover-audio" src="media/silent_1min.mp3"></audio>
-<div class="controls">
+
+      
   <button id="play-prev">&lt;&lt;</button>
   <button id="play-timeline">▶</button>  <!-- これに連動させる -->
   <button id="play-next">&gt;&gt;</button>
@@ -33,9 +36,11 @@
     </div>
   </div>
 <div id="timecode-bar"></div>
-  <div class="timeline" id="timeline">
-    <div class="voiceover-track">Voiceover 波形（ダミー表示）</div>
-    <div class="clip-track"></div>
+  <div class="timeline">
+    <div class="voiceover-track">
+        <img id="waveform-image" src="media/waveform.png" alt="waveform">
+    </div>
+    <div class="clip-track" id="timeline"></div>
     <div id="playhead"></div>
   </div>
 </body>

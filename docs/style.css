@@ -68,12 +68,17 @@ video {
   display: inline-block;
 }
 .voiceover-track {
+  position: relative;
+  height: 80px;
+  overflow-x: auto;
   background-color: #0a4c5a;
-  margin-bottom: 5px;
-  padding: 5px;
-  height: 40px;
 }
-.clip-track {
+
+.voiceover-track img {
+  height: 100%;
+  width: auto;
+  display: block;
+}.clip-track {
   display: flex;
   gap: 5px;
 }
