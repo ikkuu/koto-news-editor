@@ -48,7 +48,7 @@ timeline.addEventListener('drop', async (e) => {
   const fileName = e.dataTransfer.getData('text/plain');
 
   const video = document.createElement('video');
-  video.src = `docs/media/${fileName}`;
+  video.src = `media/${fileName}`;
   video.preload = 'metadata';
   video.muted = true;
 
@@ -152,7 +152,7 @@ playBtn.addEventListener('click', () => {
     const inTime = parseFloat(clip.dataset.in);
     const outTime = parseFloat(clip.dataset.out);
 
-    previewVideo.src = `docs/media/${fileName}`;
+    previewVideo.src = `media/${fileName}`;
     previewVideo.currentTime = inTime;
 
     previewVideo.onloadedmetadata = () => {
