@@ -88,6 +88,15 @@ timeline.addEventListener('drop', async (e) => {
   });
 });
 
+timeline.addEventListener('drop', async (e) => {
+  e.preventDefault();
+  console.log('Drop event fired');  // ← これで drop イベントの検出を確認
+
+  const fileName = e.dataTransfer.getData('text/plain');
+  // 以下続く...
+});
+
+
 // === タイムライン拡大・縮小制御 ===
 const zoomToggle = document.getElementById('zoom-toggle');
 let isZoomed = false;

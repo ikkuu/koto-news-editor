@@ -55,15 +55,10 @@ video {
 .timeline {
   position: relative;
   height: 150px;
-  background-color: #111;
-  border-top: 2px solid #555;
-  padding: 10px;
-  overflow-x: auto;
-}
-
-.timeline {
   background-color: #222;
   border: 2px dashed #666;
+  padding: 10px;
+  overflow-x: auto;
   min-height: 120px;
 }
 
@@ -172,12 +167,12 @@ video {
     border-radius: 4px;
 }
 
-#waveform-img {
-  position: absolute;
-  top: 0;
-  left: 0; /* ←ここで0秒に揃える */
-  height: 40px;
-  pointer-events: none;
+.waveform-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 40px;
+    width: 880px; /* ここで44秒相当の横幅を指定 */
 }
 .voiceover-track {
   position: relative; /* ←これがないと left: 0 が効かない */
