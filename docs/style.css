@@ -172,3 +172,9 @@ video {
     border-radius: 4px;
 }
 
+.voiceover-track img.waveform {
+    width: 192%; /* 元の画像の2倍に拡大 */
+    height: 100%; /* 高さはそのまま */
+    object-fit: contain;
+}
+
