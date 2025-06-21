@@ -173,6 +173,7 @@ video {
     left: 0;
     height: 40px;
     width: 880px; /* ここで44秒相当の横幅を指定 */
+　　pointer-events: none;
 }
 .voiceover-track {
   position: relative; /* ←これがないと left: 0 が効かない */
