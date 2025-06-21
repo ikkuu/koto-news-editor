@@ -41,14 +41,15 @@ mediaFiles.forEach(file => {
 });
 
 // === タイムラインへのD&D ===
-const timeline = document.getElementById('timeline');
+const timeline = document.querySelector('.clip-track'); // 変更点
 
 timeline.addEventListener('dragover', (e) => e.preventDefault());
 
 timeline.addEventListener('drop', async (e) => {
   e.preventDefault();
   const fileName = e.dataTransfer.getData('text/plain');
-
+  // （以下、既存の drop 処理をそのまま）
+});
   const video = document.createElement('video');
   video.src = `docs/media/${fileName}`;
   video.preload = 'metadata';
