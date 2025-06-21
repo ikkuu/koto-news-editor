@@ -15,7 +15,7 @@ mediaFiles.forEach(file => {
   container.draggable = true;
 
   const video = document.createElement('video');
-  video.src = `docs/media/${file}`;
+  video.src = `media/${file}`;
   video.muted = true;
   video.autoplay = true;
   video.preload = 'metadata';
