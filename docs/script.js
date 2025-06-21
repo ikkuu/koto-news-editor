@@ -41,60 +41,26 @@ mediaFiles.forEach(file => {
 // === タイムラインへのD&D ===
 const timeline = document.querySelector('.clip-track');
 
-timeline.addEventListener('dragover', (e) => e.preventDefault());
-
-timeline.addEventListener('drop', async (e) => {
-  e.preventDefault();
-  const fileName = e.dataTransfer.getData('text/plain');
-
-  const video = document.createElement('video');
-  video.src = `media/${fileName}`;
-  video.preload = 'metadata';
-  video.muted = true;
-
-  video.addEventListener('loadedmetadata', () => {
-    const duration = video.duration;
-    const inPoint = 0;
-    const outPoint = duration;
-
-    const clip = document.createElement('div');
-    clip.className = 'timeline-clip';
-    clip.dataset.in = inPoint;
-    clip.dataset.out = outPoint;
-    clip.dataset.duration = duration;
-
-    const label = document.createElement('div');
-    label.className = 'clip-label';
-    label.textContent = fileName;
-
-    const leftHandle = document.createElement('div');
-    leftHandle.className = 'handle handle-left';
-    const rightHandle = document.createElement('div');
-    rightHandle.className = 'handle handle-right';
-
-    clip.appendChild(leftHandle);
-    clip.appendChild(rightHandle);
-    clip.appendChild(label);
-    timeline.appendChild(clip);
-
-    if (typeof setupHandleDrag === 'function') {
-      setupHandleDrag(clip, leftHandle, 'left');
-      setupHandleDrag(clip, rightHandle, 'right');
-    }
-
-    if (typeof updateClipWidthsAndTimecode === 'function') {
-      updateClipWidthsAndTimecode();
-    }
+if (timeline) {
+  timeline.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    timeline.style.borderColor = '#0f0'; // 視覚フィードバック
   });
-});
 
-timeline.addEventListener('drop', async (e) => {
-  e.preventDefault();
-  console.log('Drop event fired');  // ← これで drop イベントの検出を確認
+  timeline.addEventListener('dragleave', () => {
+    timeline.style.borderColor = '#666';
+  });
 
-  const fileName = e.dataTransfer.getData('text/plain');
-  // 以下続く...
-});
+  timeline.addEventListener('drop', (e) => {
+    e.preventDefault();
+    timeline.style.borderColor = '#666';
+    const fileName = e.dataTransfer.getData('text/plain');
+    console.log('Dropped file:', fileName);
+    // あとで追加処理
+  });
+} else {
+  console.warn('clip-track 要素が見つかりません');
+}
 
 
 // === タイムライン拡大・縮小制御 ===
