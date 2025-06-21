@@ -1,4 +1,3 @@
-
 // script.js
 
 // === 動画素材ファイル名一覧 ===
@@ -20,32 +19,14 @@ mediaFiles.forEach(file => {
   const video = document.createElement('video');
   video.src = `docs/media/${file}`;
   video.muted = true;
+  video.autoplay = true;
   video.preload = 'metadata';
   video.width = 160;
   video.height = 90;
 
-  const label = document.createElement('div');
-  label.textContent = file;
-
-  container.appendChild(video);
-  container.appendChild(label);
-  mediaPanel.appendChild(container);
-});
-
-// === タイムラインへのD&D ===
-const timeline = document.getElementById('timeline');
-
-mediaFiles.forEach(file => {
-  const container = document.createElement('div');
-  container.className = 'media-item';
-  container.draggable = true;
-
-  const video = document.createElement('video');
-  video.src = `docs/media/${file}`;
-  video.muted = true;
-  video.preload = 'metadata';
-  video.width = 160;
-  video.height = 90;
+  video.addEventListener('loadedmetadata', () => {
+    video.currentTime = 0.1; // サムネイル表示用
+  });
 
   const label = document.createElement('div');
   label.textContent = file;
@@ -54,11 +35,13 @@ mediaFiles.forEach(file => {
   container.appendChild(label);
   mediaPanel.appendChild(container);
 
-  // ← ここで直接 container に dragstart イベントを追加
   container.addEventListener('dragstart', (e) => {
     e.dataTransfer.setData('text/plain', file);
   });
 });
+
+// === タイムラインへのD&D ===
+const timeline = document.getElementById('timeline');
 
 timeline.addEventListener('dragover', (e) => e.preventDefault());
 
@@ -75,7 +58,6 @@ timeline.addEventListener('drop', async (e) => {
     const duration = video.duration;
     const inPoint = 0;
     const outPoint = duration;
-    const width = Math.max(duration * 10, 50);
 
     const clip = document.createElement('div');
     clip.className = 'timeline-clip';
@@ -238,5 +220,5 @@ function setupHandleDrag(clip, handle, side) {
   });
 }
 
-// === 初期実行 ===
+// === 初期表示処理 ===
 updateClipWidthsAndTimecode();

@@ -60,13 +60,13 @@ video {
   padding: 10px;
   overflow-x: auto;
 }
-.timeline-clip {
-  background-color: #eee;
-  border: 1px solid #999;
-  margin: 4px;
-  padding: 4px;
-  display: inline-block;
+
+.timeline {
+  background-color: #222;
+  border: 2px dashed #666;
+  min-height: 120px;
 }
+
 .voiceover-track {
   position: relative;
   height: 80px;
