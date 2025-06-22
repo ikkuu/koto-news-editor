@@ -151,8 +151,9 @@ video {
 .clip-track {
   display: flex;
   gap: 5px;
-  position: relative;
-  z-index: 2;
+  min-height: 60px;
+  padding: 5px;
+  border: 1px dashed #444;
 }
 
 #timecode-overlay {

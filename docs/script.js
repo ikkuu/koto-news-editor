@@ -38,30 +38,63 @@ mediaFiles.forEach(file => {
   });
 });
 
-// === タイムラインへのD&D ===
-const timeline = document.querySelector('.clip-track');
+const timelineTrack = document.querySelector('.clip-track');
+const timelineZoomed = false; // ズーム未実装の場合は固定でもOK
 
-if (timeline) {
-  timeline.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    timeline.style.borderColor = '#0f0'; // 視覚フィードバック
+timelineTrack.addEventListener('dragover', (e) => e.preventDefault());
+
+timelineTrack.addEventListener('drop', (e) => {
+  e.preventDefault();
+  const fileName = e.dataTransfer.getData('text/plain');
+  if (!fileName) return;
+
+  const video = document.createElement('video');
+  video.src = `media/${fileName}`;
+  video.preload = 'metadata';
+  video.muted = true;
+
+  video.addEventListener('loadedmetadata', () => {
+    const duration = video.duration;
+    const inPoint = 0;
+    const outPoint = duration;
+
+    const clip = document.createElement('div');
+    clip.className = 'timeline-clip';
+    clip.dataset.in = inPoint;
+    clip.dataset.out = outPoint;
+    clip.dataset.duration = duration;
+
+    const label = document.createElement('div');
+    label.className = 'clip-label';
+    label.textContent = fileName;
+
+    const leftHandle = document.createElement('div');
+    leftHandle.className = 'handle handle-left';
+    const rightHandle = document.createElement('div');
+    rightHandle.className = 'handle handle-right';
+
+    clip.appendChild(leftHandle);
+    clip.appendChild(rightHandle);
+    clip.appendChild(label);
+
+    // 幅指定（20px/sec ズームレベル対応）
+    const pixelsPerSecond = timelineZoomed ? 100 : 20;
+    const width = Math.max(duration * pixelsPerSecond, 50);
+    clip.style.width = `${width}px`;
+
+    timelineTrack.appendChild(clip);
+
+    // ハンドルがあるなら動作追加
+    if (typeof setupHandleDrag === 'function') {
+      setupHandleDrag(clip, leftHandle, 'left');
+      setupHandleDrag(clip, rightHandle, 'right');
+    }
+
+    if (typeof updateClipWidthsAndTimecode === 'function') {
+      updateClipWidthsAndTimecode();
+    }
   });
-
-  timeline.addEventListener('dragleave', () => {
-    timeline.style.borderColor = '#666';
-  });
-
-  timeline.addEventListener('drop', (e) => {
-    e.preventDefault();
-    timeline.style.borderColor = '#666';
-    const fileName = e.dataTransfer.getData('text/plain');
-    console.log('Dropped file:', fileName);
-    // あとで追加処理
-  });
-} else {
-  console.warn('clip-track 要素が見つかりません');
-}
-
+});
 
 // === タイムライン拡大・縮小制御 ===
 const zoomToggle = document.getElementById('zoom-toggle');
