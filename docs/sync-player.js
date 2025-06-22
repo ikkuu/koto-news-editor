@@ -43,6 +43,7 @@ document.getElementById('play-all').addEventListener('click', () => {
     previewVideo.currentTime = 0;
     previewVideo.play();
     voiceoverAudio.currentTime = 0;
+    voiceoverAudio.load(); // iOSでの再生安定化に重要
     voiceoverAudio.play();
 });
 

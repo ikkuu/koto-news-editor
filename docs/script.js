@@ -196,7 +196,7 @@ function formatTimecode(t) {
 function setupHandleDrag(clip, handle, side) {
   let isDragging = false;
 
-  handle.addEventListener('mousedown', (e) => {
+  handle.addEventListener('pointerdown', (e) => {
     e.preventDefault();
     isDragging = true;
 
@@ -206,7 +206,7 @@ function setupHandleDrag(clip, handle, side) {
     const duration = parseFloat(clip.dataset.duration);
     const pixelsPerSecond = isZoomed ? 100 : 20;
 
-    function onMouseMove(moveEvent) {
+    function onPointerMove(moveEvent) {
       if (!isDragging) return;
       const deltaX = moveEvent.clientX - startX;
       const deltaSeconds = deltaX / pixelsPerSecond;
@@ -222,14 +222,14 @@ function setupHandleDrag(clip, handle, side) {
       updateClipWidthsAndTimecode();
     }
 
-    function onMouseUp() {
+    function onPointerUp() {
       isDragging = false;
-      window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('mouseup', onMouseUp);
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
     }
 
-    window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('mouseup', onMouseUp);
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
   });
 }
 
