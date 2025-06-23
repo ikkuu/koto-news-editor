@@ -99,16 +99,14 @@ zoomToggle.addEventListener('click', () => {
 
 // === 再生処理（音声と同期） ===
 playBtn.addEventListener('click', () => {
-  const clips = document.querySelectorAll('.timeline-clip');
-  if (clips.length === 0) return;
-
-  let currentIndex = 0;
-
-  function playNextClip() {
-    if (currentIndex >= clips.length) {
-      voiceoverAudio.pause();
-      return;
-    }
+  voiceoverAudio.currentTime = 0;
+  voiceoverAudio.play().then(() => {
+    playNextClip(); // ← 成功したら映像再生開始
+  }).catch(err => {
+    alert("音声の自動再生がブロックされました。再度ボタンを押してください。");
+    console.warn(err);
+  });
+});
 
     const clip = clips[currentIndex];
     const fileName = clip.querySelector('.clip-label').textContent.trim();

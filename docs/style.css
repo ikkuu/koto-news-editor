@@ -39,9 +39,29 @@ body {
   max-width: 160px;
 }
 .preview-panel {
-  width: 60%;
+  position: relative;
+  z-index: 2;
+  background: #000;
+  padding-bottom: 20px;
+}
+
+.timeline {
+  position: relative;
+  z-index: 1;
+  margin-top: 10px;
   padding: 10px;
-  box-sizing: border-box;
+  background-color: #222;
+@media screen and (max-width: 768px) {
+  .preview-panel video {
+    width: 100%;
+    height: auto;
+  }
+
+  .timeline {
+    overflow-x: auto;
+  }
+}
+
 }
 video {
   width: auto;
@@ -51,15 +71,6 @@ video {
 .controls {
   text-align: center;
   margin-top: 5px;
-}
-.timeline {
-  position: relative;
-  height: 150px;
-  background-color: #222;
-  border: 2px dashed #666;
-  padding: 10px;
-  overflow-x: auto;
-  min-height: 120px;
 }
 
 .voiceover-track {
