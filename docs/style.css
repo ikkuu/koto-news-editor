@@ -179,19 +179,18 @@ video {
     border-radius: 4px;
 }
 
-#waveform {
-  width: 100%;              /* 横幅は親にフィット */
-  height: 60px;             /* 任意の表示高さ */
-  object-fit: cover;        /* 拡大してクロップ（上下切り取り） */
-  object-position: center;  /* 中央揃え */
-  display: block;
+.waveform-img {
+  width: 100%;
+  height: auto;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%); /* 中央にずらす */
 }
-
 .voiceover-track {
   position: relative; /* ←これがないと left: 0 が効かない */
   background-color: #0a4c5a;
   margin-bottom: 5px;
-  height: 40px;
+  height: 60px;
   overflow: hidden;
 }
 
