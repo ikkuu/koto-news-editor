@@ -101,6 +101,9 @@ playBtn.addEventListener('click', () => {
       });
     };
   }
+voiceoverAudio.play().catch((e) => {
+  alert("音声の再生がブロックされました。もう一度再生ボタンを押してください。");
+});
 
   voiceoverAudio.currentTime = 0;
   voiceoverAudio.play().then(() => {
