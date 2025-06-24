@@ -67,52 +67,6 @@ function renderTimecodeBar(durationSeconds = 60, pixelsPerSecond = 20) {
   }
 }
 
-// === 再生処理 ===
-playBtn.addEventListener('click', () => {
-  const clips = document.querySelectorAll('.timeline-clip');
-  if (clips.length === 0) return;
-
-  let currentIndex = 0;
-
-  function playNextClip() {
-    if (currentIndex >= clips.length) {
-      voiceoverAudio.pause();
-      return;
-    }
-
-    const clip = clips[currentIndex];
-    const fileName = clip.querySelector('.clip-label').textContent.trim();
-    const inTime = parseFloat(clip.dataset.in);
-    const outTime = parseFloat(clip.dataset.out);
-
-    previewVideo.src = `media/${fileName}`;
-    previewVideo.onloadedmetadata = () => {
-      previewVideo.currentTime = inTime;
-      previewVideo.play();
-
-      previewVideo.addEventListener('timeupdate', function checkPlayback() {
-        timeOverlay.textContent = formatTimecode(previewVideo.currentTime);
-        if (previewVideo.currentTime >= outTime) {
-          previewVideo.pause();
-          previewVideo.removeEventListener('timeupdate', checkPlayback);
-          currentIndex++;
-          playNextClip();
-        }
-      });
-    };
-  }
-voiceoverAudio.play().catch((e) => {
-  alert("音声の再生がブロックされました。もう一度再生ボタンを押してください。");
-});
-
-  voiceoverAudio.currentTime = 0;
-  voiceoverAudio.play().then(() => {
-    playNextClip();
-  }).catch(err => {
-    alert("音声の自動再生がブロックされました。再度ボタンを押してください。");
-    console.warn(err);
-  });
-});
 
 function formatTimecode(t) {
   const minutes = Math.floor(t / 60).toString().padStart(2, '0');
