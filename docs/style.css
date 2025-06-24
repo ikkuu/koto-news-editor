@@ -179,13 +179,10 @@ video {
     border-radius: 4px;
 }
 
-.waveform-img {
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: 40px;
-    width: 880px; /* ここで44秒相当の横幅を指定 */
-    pointer-events: none;
+#waveform-img {
+  width: 100%; /* タイムライン全体の幅にフィット */
+  height: auto;
+  display: block;
 }
 .voiceover-track {
   position: relative; /* ←これがないと left: 0 が効かない */

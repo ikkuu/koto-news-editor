@@ -2,15 +2,21 @@
 document.addEventListener('DOMContentLoaded', () => {
   // ナレーション再生とクリップ切り替え処理
   // 
-const voiceoverAudio = new Audio('audio/narration.mp3');
-const previewVideo = document.getElementById('preview-video');
+document.addEventListener('DOMContentLoaded', () => {
+  const voiceoverAudio = document.getElementById('voiceover-audio'); // 修正点
+  const previewVideo = document.getElementById('preview-video');
+  // clips[] は必要に応じて統合の検討（現状はscript.jsと重複しやすい）
 
-// Define video clips with their corresponding in/out times relative to narration
-const clips = [
-    { src: '../assets/clip1.mp4', start: 0, end: 5 },
-    { src: '../assets/clip2.mp4', start: 5, end: 10 },
-    { src: '../assets/clip3.mp4', start: 10, end: 15 }
-];
+  document.getElementById('play-all').addEventListener('click', () => {
+    voiceoverAudio.load(); // 安定のため明示的にロード
+    voiceoverAudio.play(); // iOSでは必ずユーザー操作後に再生
+
+    // videoの再生処理を script.js に一元化した方が整理しやすいかもしれません
+  });
+});
+
+
+
 
 let currentClipIndex = 0;
 
