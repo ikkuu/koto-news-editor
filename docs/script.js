@@ -1,39 +1,76 @@
-// === 初期設定 ===
-const TIMELINE_WIDTH_FULL = 1000;
-const TIMELINE_WIDTH_ZOOM = 4000;
-let isZoomed = false;
 
-document.addEventListener('DOMContentLoaded', () => {
-  const timeline = document.querySelector('.timeline');
-  const zoomToggle = document.getElementById('zoom-toggle');
+// === 動画素材ファイル名一覧 ===
+const mediaFiles = [
+  '001.mp4',
+  '002.mp4',
+  '003.mp4',
+  '004.mp4'
+];
 
-  zoomToggle.addEventListener('click', () => {
-    isZoomed = !isZoomed;
-    timeline.style.width = isZoomed ? `${TIMELINE_WIDTH_ZOOM}px` : `${TIMELINE_WIDTH_FULL}px`;
-    syncWaveformWidthWithTimeline();
-    updateClipWidthsAndTimecode();
+// === メディアパネルに素材を表示 ===
+const mediaPanel = document.getElementById('mediaPanel');
+
+mediaFiles.forEach(file => {
+  const container = document.createElement('div');
+  container.className = 'media-item';
+  container.draggable = true;
+
+  const video = document.createElement('video');
+  video.src = `media/${file}`;
+  video.muted = true;
+  video.autoplay = true;
+  video.preload = 'metadata';
+  video.width = 160;
+  video.height = 90;
+
+  video.addEventListener('loadedmetadata', () => {
+    video.currentTime = 0.1; // サムネイル表示用
   });
 
-  renderTimecodeBar(40, isZoomed ? 100 : 20);
-  updateClipWidthsAndTimecode();
-  syncWaveformWidthWithTimeline();
+  const label = document.createElement('div');
+  label.textContent = file;
+
+  container.appendChild(video);
+  container.appendChild(label);
+  mediaPanel.appendChild(container);
+
+  container.addEventListener('dragstart', (e) => {
+    e.dataTransfer.setData('text/plain', file);
+  });
 });
 
-// === waveform画像の横幅をタイムラインに同期 ===
-function syncWaveformWidthWithTimeline() {
-  const waveformImg = document.getElementById('waveform-img');
-  const durationInSeconds = 40;
-  const pixelsPerSecond = isZoomed ? 100 : 20;
-  const expectedWidth = durationInSeconds * pixelsPerSecond;
+const timelineTrack = document.querySelector('.clip-track');
+const zoomToggle = document.getElementById('zoom-toggle');
+const previewVideo = document.getElementById('preview-video');
+const voiceoverAudio = document.getElementById('voiceover-audio');
+const timeOverlay = document.getElementById('timecode-overlay');
+const playBtn = document.getElementById('play-timeline');
 
-  if (waveformImg) {
-    waveformImg.style.width = `${expectedWidth}px`;
-    waveformImg.style.left = '0px';
-  }
+let isZoomed = false;
+let pixelsPerSecond = 20;
+const TIMELINE_WIDTH_FULL = 1200;
+const TIMELINE_WIDTH_ZOOM = 4800;
+
+zoomToggle.addEventListener('click', () => {
+  isZoomed = !isZoomed;
+  pixelsPerSecond = isZoomed ? 100 : 20;
+  document.querySelector('.timeline').style.width = isZoomed ? `${TIMELINE_WIDTH_ZOOM}px` : `${TIMELINE_WIDTH_FULL}px`;
+  updateClipWidthsAndTimecode();
+});
+
+function updateClipWidthsAndTimecode() {
+  const clips = document.querySelectorAll('.timeline-clip');
+
+  clips.forEach(clip => {
+    const duration = parseFloat(clip.dataset.out) - parseFloat(clip.dataset.in);
+    clip.style.width = `${duration * pixelsPerSecond}px`;
+  });
+
+  renderTimecodeBar(60, pixelsPerSecond);
+  updateWaveformWidth();
 }
 
-// === タイムコードバーを描画 ===
-function renderTimecodeBar(durationSeconds = 40, pixelsPerSecond = 20) {
+function renderTimecodeBar(durationSeconds = 60, pixelsPerSecond = 20) {
   const timecodeBar = document.getElementById('timecode-bar');
   timecodeBar.innerHTML = '';
   for (let i = 0; i <= durationSeconds; i++) {
@@ -45,15 +82,145 @@ function renderTimecodeBar(durationSeconds = 40, pixelsPerSecond = 20) {
   }
 }
 
-// === クリップ幅とタイムコード更新 ===
-function updateClipWidthsAndTimecode() {
-  const clips = document.querySelectorAll('.timeline-clip');
-  const pixelsPerSecond = isZoomed ? 100 : 20;
-
-  clips.forEach(clip => {
-    const duration = parseFloat(clip.dataset.out) - parseFloat(clip.dataset.in);
-    clip.style.width = `${duration * pixelsPerSecond}px`;
-  });
-
-  renderTimecodeBar(40, pixelsPerSecond);
+function updateWaveformWidth() {
+  const waveform = document.getElementById('waveform-image');
+  if (waveform) {
+    waveform.style.width = `${pixelsPerSecond * 60}px`;
+  }
 }
+
+timelineTrack.addEventListener('dragover', (e) => e.preventDefault());
+
+timelineTrack.addEventListener('drop', (e) => {
+  e.preventDefault();
+  const fileName = e.dataTransfer.getData('text/plain');
+  if (!fileName) return;
+
+  const video = document.createElement('video');
+  video.src = `media/${fileName}`;
+  video.preload = 'metadata';
+  video.muted = true;
+
+  video.addEventListener('loadedmetadata', () => {
+    const duration = video.duration;
+    const inPoint = 0;
+    const outPoint = duration;
+
+    const clip = document.createElement('div');
+    clip.className = 'timeline-clip';
+    clip.dataset.in = inPoint;
+    clip.dataset.out = outPoint;
+    clip.dataset.duration = duration;
+
+    const label = document.createElement('div');
+    label.className = 'clip-label';
+    label.textContent = fileName;
+
+    const leftHandle = document.createElement('div');
+    leftHandle.className = 'handle handle-left';
+    const rightHandle = document.createElement('div');
+    rightHandle.className = 'handle handle-right';
+
+    clip.appendChild(leftHandle);
+    clip.appendChild(rightHandle);
+    clip.appendChild(label);
+
+    clip.style.width = `${duration * pixelsPerSecond}px`;
+    timelineTrack.appendChild(clip);
+
+    setupHandleDrag(clip, leftHandle, 'left');
+    setupHandleDrag(clip, rightHandle, 'right');
+    updateClipWidthsAndTimecode();
+  });
+});
+
+playBtn.addEventListener('click', () => {
+  const clips = document.querySelectorAll('.timeline-clip');
+  if (clips.length === 0) return;
+
+  let currentIndex = 0;
+
+  function playNextClip() {
+    if (currentIndex >= clips.length) {
+      voiceoverAudio.pause();
+      return;
+    }
+
+    const clip = clips[currentIndex];
+    const fileName = clip.querySelector('.clip-label').textContent.trim();
+    const inTime = parseFloat(clip.dataset.in);
+    const outTime = parseFloat(clip.dataset.out);
+
+    previewVideo.src = `media/${fileName}`;
+    previewVideo.currentTime = inTime;
+
+    previewVideo.onloadedmetadata = () => {
+      previewVideo.currentTime = inTime;
+      previewVideo.play();
+
+      previewVideo.addEventListener('timeupdate', function checkPlayback() {
+        timeOverlay.textContent = formatTimecode(previewVideo.currentTime);
+        if (previewVideo.currentTime >= outTime) {
+          previewVideo.pause();
+          previewVideo.removeEventListener('timeupdate', checkPlayback);
+          currentIndex++;
+          playNextClip();
+        }
+      });
+    };
+  }
+
+  voiceoverAudio.currentTime = 0;
+  voiceoverAudio.play();
+  playNextClip();
+});
+
+function formatTimecode(t) {
+  const minutes = Math.floor(t / 60).toString().padStart(2, '0');
+  const seconds = Math.floor(t % 60).toString().padStart(2, '0');
+  const decimal = Math.floor((t % 1) * 10);
+  return `${minutes}:${seconds}.${decimal}`;
+}
+
+function setupHandleDrag(clip, handle, side) {
+  let isDragging = false;
+
+  handle.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    isDragging = true;
+
+    const startX = e.clientX;
+    const startIn = parseFloat(clip.dataset.in);
+    const startOut = parseFloat(clip.dataset.out);
+    const duration = parseFloat(clip.dataset.duration);
+
+    function onPointerMove(moveEvent) {
+      if (!isDragging) return;
+      const deltaX = moveEvent.clientX - startX;
+      const deltaSeconds = deltaX / pixelsPerSecond;
+
+      if (side === 'left') {
+        const newIn = Math.max(0, Math.min(startOut - 0.1, startIn + deltaSeconds));
+        clip.dataset.in = newIn.toFixed(2);
+      } else {
+        const newOut = Math.min(duration, Math.max(startIn + 0.1, startOut + deltaSeconds));
+        clip.dataset.out = newOut.toFixed(2);
+      }
+
+      updateClipWidthsAndTimecode();
+    }
+
+    function onPointerUp() {
+      isDragging = false;
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+    }
+
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+  });
+}
+
+// 初期化処理
+renderTimecodeBar(60, pixelsPerSecond);
+updateWaveformWidth();
