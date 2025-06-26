@@ -50,7 +50,10 @@ const TIMELINE_WIDTH_ZOOM = 5000;
 // === タイムライン拡大・縮小制御 ===
 zoomToggle.addEventListener('click', () => {
   isZoomed = !isZoomed;
-  timeline.style.width = isZoomed ? `${TIMELINE_WIDTH_ZOOM}px` : `${TIMELINE_WIDTH_FULL}px`;
+  timeline.style.width = isZoomed ? `${TIMELINE_WIDTH_ZOOM}px` : `
+syncWaveformWidthWithTimeline();
+
+${TIMELINE_WIDTH_FULL}px`;
   updateClipWidthsAndTimecode();
 });
 
@@ -65,6 +68,14 @@ function renderTimecodeBar(durationSeconds = 60, pixelsPerSecond = 20) {
     label.style.minWidth = `${pixelsPerSecond}px`;
     timecodeBar.appendChild(label);
   }
+function syncWaveformWidthWithTimeline() {
+  const timeline = document.querySelector('.timeline');
+  const waveformImage = document.getElementById('waveform-img');
+  if (timeline && waveformImage) {
+    waveformImage.style.width = `${timeline.offsetWidth}px`;
+  }
+}
+
 }
 
 
@@ -128,6 +139,7 @@ function updateClipWidthsAndTimecode() {
 
   renderTimecodeBar(60, pixelsPerSecond);
 }
+
 
 // === 初期表示処理 ===
 updateClipWidthsAndTimecode();

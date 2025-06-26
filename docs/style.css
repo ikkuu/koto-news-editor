@@ -179,12 +179,12 @@ video {
     border-radius: 4px;
 }
 
-.waveform-img {
-  width: 157%;
-  height: auto;
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%); /* 中央にずらす */
+#waveform-img {
+  width: 100%;  /* NG: 親要素の制限を受ける */
+  /* 以下のように変更推奨 */
+  display: block;
+  height: 100%;
+  object-fit: contain;
 }
 .voiceover-track {
   position: relative; /* ←これがないと left: 0 が効かない */
