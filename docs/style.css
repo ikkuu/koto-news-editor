@@ -179,21 +179,19 @@ video {
     border-radius: 4px;
 }
 
-#waveform-img {
-  width: 100%;  /* NG: 親要素の制限を受ける */
-  /* 以下のように変更推奨 */
-  display: block;
-  height: 100%;
-  object-fit: contain;
-}
-.voiceover-track {
-  position: relative; /* ←これがないと left: 0 が効かない */
-  background-color: #0a4c5a;
-  margin-bottom: 5px;
-  height: 60px;
+#waveform-wrapper {
+  position: relative;
+  height: 100px;
   overflow: hidden;
 }
 
+#waveform-img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: auto; /* 横幅はJSで制御 */
+}
 .controls button {
   font-size: 1.5rem;
   padding: 0.5rem 1rem;

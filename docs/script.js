@@ -70,20 +70,14 @@ function renderTimecodeBar(durationSeconds = 60, pixelsPerSecond = 20) {
   }
 function syncWaveformWidthWithTimeline() {
   const timeline = document.querySelector('.timeline');
-  const waveformImage = document.getElementById('waveform-img');
-  if (timeline && waveformImage) {
-    waveformImage.style.width = `${timeline.offsetWidth}px`;
-  }
-}
+  const waveformImg = document.getElementById('waveform-img');
 
-}
+  const durationInSeconds = 40;  // ← waveform.png に相当する音声の長さ
+  const pixelsPerSecond = isZoomed ? 100 : 20;
+  const expectedWidth = durationInSeconds * pixelsPerSecond;
 
-
-function formatTimecode(t) {
-  const minutes = Math.floor(t / 60).toString().padStart(2, '0');
-  const seconds = Math.floor(t % 60).toString().padStart(2, '0');
-  const decimal = Math.floor((t % 1) * 10);
-  return `${minutes}:${seconds}.${decimal}`;
+  waveformImg.style.width = `${expectedWidth}px`;
+  waveformImg.style.left = `0px`;  // ← ここで左端0秒に合わせる
 }
 
 // === インアウト調整ハンドル処理 ===
