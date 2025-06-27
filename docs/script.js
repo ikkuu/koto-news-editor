@@ -27,7 +27,6 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // 以下、タイムラインなど他の処理…
-});
   const timelineTrack = document.querySelector('.clip-track');
   const zoomToggle = document.getElementById('zoom-toggle');
   const waveformImg = document.getElementById('waveform-img');
