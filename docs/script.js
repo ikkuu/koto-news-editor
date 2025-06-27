@@ -3,7 +3,31 @@
 // === script.js ===
 document.addEventListener('DOMContentLoaded', () => {
   const mediaFiles =['001.mp4', '002.mp4', '003.mp4', '004.mp4', '005.mp4', '006.mp4', '007.mp4', '008.mp4', '009.mp4', '010.mp4', '011.mp4', '012.mp4', '013.mp4', '014.mp4', '015.mp4', '016.mp4', '017.mp4', '018.mp4', '019.mp4', '020.mp4', '021.mp4', '022.mp4', '023.mp4'];
-  const mediaPanel = document.getElementById('mediaPanel');
+   const mediaPanel = document.getElementById('mediaPanel');
+
+  mediaFiles.forEach(file => {
+    const container = document.createElement('div');
+    container.className = 'media-item';
+    container.draggable = true;
+
+    const img = document.createElement('img');
+    img.src = `media/${file}.jpg`;  // サムネイル画像として 001.mp4 → 001.mp4.jpg
+    img.alt = file;
+
+    const label = document.createElement('div');
+    label.textContent = file;
+
+    container.appendChild(img);
+    container.appendChild(label);
+    mediaPanel.appendChild(container);
+
+    container.addEventListener('dragstart', (e) => {
+      e.dataTransfer.setData('text/plain', file);
+    });
+  });
+
+  // 以下、タイムラインなど他の処理…
+});
   const timelineTrack = document.querySelector('.clip-track');
   const zoomToggle = document.getElementById('zoom-toggle');
   const waveformImg = document.getElementById('waveform-img');
