@@ -58,50 +58,54 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // タイムラインへのドロップ
-  timelineTrack.addEventListener('dragover', e => e.preventDefault());
-  timelineTrack.addEventListener('drop', e => {
-    e.preventDefault();
-    const fileName = e.dataTransfer.getData('text/plain');
-    if (!fileName) return;
+// dragoverは一度だけ登録
+timelineTrack.addEventListener('dragover', e => e.preventDefault());
 
-    const video = document.createElement('video');
-    video.src = `media/${fileName}`;
-    video.preload = 'metadata';
-    video.muted = true;
+timelineTrack.addEventListener('drop', (e) => {
+  e.preventDefault();
+  timelineTrack.classList.remove('dragover');
 
-    video.addEventListener('loadedmetadata', () => {
-      const duration = video.duration;
-      const clip = document.createElement('div');
-      clip.className = 'timeline-clip';
-      clip.dataset.in = 0;
-      clip.dataset.out = duration;
-      clip.dataset.duration = duration;
+  const fileName = e.dataTransfer.getData('text/plain');
+  if (!fileName) return;
 
-      const label = document.createElement('div');
-      label.className = 'clip-label';
-      label.textContent = fileName;
+  const video = document.createElement('video');
+  video.src = `media/${fileName}`;
+  video.preload = 'metadata';
+  video.muted = true;
 
-      const leftHandle = document.createElement('div');
-      leftHandle.className = 'handle handle-left';
-      const rightHandle = document.createElement('div');
-      rightHandle.className = 'handle handle-right';
+  video.addEventListener('loadedmetadata', () => {
+    const duration = video.duration;
+    const clip = document.createElement('div');
+    clip.className = 'timeline-clip';
+    clip.dataset.in = 0;
+    clip.dataset.out = duration;
+    clip.dataset.duration = duration;
 
-      const deleteBtn = document.createElement('button');
-      deleteBtn.className = 'clip-delete';
-      deleteBtn.textContent = '×';
-      deleteBtn.addEventListener('click', () => clip.remove());
+    const label = document.createElement('div');
+    label.className = 'clip-label';
+    label.textContent = fileName;
 
-      clip.appendChild(leftHandle);
-      clip.appendChild(rightHandle);
-      clip.appendChild(label);
-      clip.appendChild(deleteBtn);
+    const leftHandle = document.createElement('div');
+    leftHandle.className = 'handle handle-left';
+    const rightHandle = document.createElement('div');
+    rightHandle.className = 'handle handle-right';
 
-      timelineTrack.appendChild(clip);
-      setupHandleDrag(clip, leftHandle, 'left');
-      setupHandleDrag(clip, rightHandle, 'right');
-      updateTimelineView();
-    });
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'clip-delete';
+    deleteBtn.textContent = '×';
+    deleteBtn.addEventListener('click', () => clip.remove());
+
+    clip.appendChild(leftHandle);
+    clip.appendChild(rightHandle);
+    clip.appendChild(label);
+    clip.appendChild(deleteBtn);
+
+    timelineTrack.appendChild(clip);
+    setupHandleDrag(clip, leftHandle, 'left');
+    setupHandleDrag(clip, rightHandle, 'right');
+    updateTimelineView();
   });
+});
 
   function pixelsPerSecond() {
     return isZoomed ? 100 : 20;
