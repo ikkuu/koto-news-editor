@@ -1,135 +1,53 @@
-body {
-  background-color: #1e1e1e;
-  color: white;
-  font-family: sans-serif;
-  margin: 0;
-  padding: 0;
-}
-.header {
-  padding: 10px;
-  background-color: #2c2c2c;
+/* style.css */
+
+#mediaPanel {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
+  margin-bottom: 1em;
 }
-.main-layout {
-  display: flex;
-  height: 50vh;
-  border-top: 1px solid #444;
-}
-.media-panel {
-  width: 30%;
-  overflow-y: auto;
-  background-color: #2c2c2c;
-  padding: 10px;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
+
 .media-item {
+  text-align: center;
+  font-size: 0.9em;
+}
+
+.clip-track {
+  position: relative;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  cursor: grab;
-}
-.media-item video {
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  width: 100%;
-  max-width: 160px;
-}
-.preview-panel {
-  position: relative;
-  z-index: 2;
-  background: #000;
-  padding-bottom: 20px;
-
-}
-
-.timeline {
-  position: relative;
-  z-index: 1;
-  margin-top: 10px;
-  padding: 10px;
-  background-color: #222;
-@media screen and (max-width: 768px) {
-  .preview-panel video {
-    width: 100%;
-    height: auto;
-  }
-
-  .timeline {
-    overflow-x: auto;
-  }
-}
-
-}
-.preview-panel video {
-  max-height: 300px;
-  width: auto;
-  display: block;
-  margin: 0 auto;
-}
-
-.controls {
-  text-align: center;
-  margin-top: 5px;
-}
-
-.voiceover-track {
-  position: relative;
   height: 80px;
-  overflow-x: auto;
-  background-color: #0a4c5a;
-}
-
-.voiceover-track img {
-  height: 100%;
-  width: auto;
-  display: block;
-}.clip-track {
-  display: flex;
-  gap: 5px;
-}
-.clip {
-  background-color: #333;
-  padding: 10px;
-  width: 100px;
-  text-align: center;
-}
-#playhead {
-  width: 2px;
-  height: 100%;
-  background-color: red;
-  position: absolute;
-  top: 0;
-  left: 0;
+  overflow-x: scroll;
+  background-color: #eee;
+  border: 1px solid #ccc;
+  margin-bottom: 1em;
 }
 
 .timeline-clip {
-  background-color: #444;
-  border: 1px solid #888;
-  margin: 4px;
-  padding: 4px;
-  display: inline-block;
   position: relative;
-  height: 40px;
-  color: white;
+  height: 60px;
+  background-color: #6495ed;
+  margin: 0 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8em;
+  color: #fff;
+  border-radius: 4px;
 }
 
 .clip-label {
-  text-align: center;
-  white-space: nowrap;
+  pointer-events: none;
 }
 
 .handle {
   position: absolute;
-  width: 8px;
   top: 0;
-  bottom: 0;
-  background-color: red;
+  width: 6px;
+  height: 100%;
+  background-color: #333;
   cursor: ew-resize;
-  z-index: 10;
+  z-index: 1;
 }
 
 .handle-left {
@@ -139,60 +57,43 @@ body {
 .handle-right {
   right: 0;
 }
+
 #timecode-bar {
-    display: flex;
-    justify-content: flex-start;
-    font-size: 10px;
-    color: white;
-    background-color: #2c2c2c;
-    padding: 2px 0;
-    border-bottom: 1px solid #555;
-    overflow-x: auto;
+  display: flex;
+  overflow-x: hidden;
+  border-bottom: 1px solid #999;
+  margin-bottom: 0.5em;
 }
 
 .timecode-label {
-    min-width: 20px; /* 秒単位のラベル幅、ズームによって変化させる */
-    text-align: center;
-    border-left: 1px solid #666;
-    padding-left: 2px;
+  text-align: center;
+  border-right: 1px solid #ccc;
+  font-size: 0.75em;
 }
 
-.video-wrapper {
-    position: relative;
-    display: inline-block;
-}
-
-.clip-track {
-  display: flex;
-  gap: 5px;
-  min-height: 60px;
-  padding: 5px;
-  border: 1px dashed #444;
-}
-
-#timecode-overlay {
-    position: absolute;
-    bottom: 8px;
-    right: 8px;
-    background-color: rgba(0,0,0,0.6);
-    color: white;
-    padding: 4px 6px;
-    font-size: 14px;
-    font-family: monospace;
-    border-radius: 4px;
-}
-
-#waveform-wrapper {
-  position: relative;
-  height: 100px;
-  overflow: hidden;
+#waveform-container {
+  width: 100%;
+  overflow-x: hidden;
+  background-color: #ddd;
 }
 
 #waveform-img {
+  width: 100%;
+  height: auto;
   object-fit: contain;
-  height: 100px;
+  object-position: left center;
+  display: block;
+  pointer-events: none;
 }
-.controls button {
-  font-size: 1.5rem;
-  padding: 0.5rem 1rem;
+
+@media screen and (max-width: 768px) {
+  #preview {
+    height: 180px;
+  }
+}
+
+@media screen and (min-width: 769px) {
+  #preview {
+    height: 280px;
+  }
 }
