@@ -74,9 +74,9 @@ body {
 }
 
 .controls {
-width: 200%;
-  height: 200%;
-  display: flex;
+width: 100px;
+  height: 50px;
+  display: center;
   gap: 10px;
   margin-top: 10px;
 }
