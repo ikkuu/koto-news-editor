@@ -16,26 +16,28 @@ document.addEventListener('DOMContentLoaded', () => {
   let isZoomed = false;
 
   // サムネ表示（画像）
-  mediaFiles.forEach(file => {
-    const container = document.createElement('div');
-    container.className = 'media-item';
-    container.draggable = true;
+ mediaFiles.forEach(file => {
+  const container = document.createElement('div');
+  container.className = 'media-item';
+  container.draggable = true;
 
-    const img = document.createElement('img');
-    img.src = `media/${file}.jpg`;  // 静止画サムネ
-    img.alt = file;
+  const baseName = file.replace(/\.[^/.]+$/, ""); // ここで.mp4を取り除く
+  const img = document.createElement('img');
+  img.src = `media/${baseName}.jpg`;
+  img.alt = file;
 
-    const label = document.createElement('div');
-    label.textContent = file;
+  const label = document.createElement('div');
+  label.textContent = file;
 
-    container.appendChild(img);
-    container.appendChild(label);
-    mediaPanel.appendChild(container);
+  container.appendChild(img);
+  container.appendChild(label);
+  mediaPanel.appendChild(container);
 
-    container.addEventListener('dragstart', (e) => {
-      e.dataTransfer.setData('text/plain', file);
-    });
+  container.addEventListener('dragstart', (e) => {
+    e.dataTransfer.setData('text/plain', file);
   });
+});
+
 
   // 素材フル再生
   fullPreviewButton.addEventListener('click', () => {
