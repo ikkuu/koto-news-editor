@@ -57,18 +57,20 @@ document.addEventListener('DOMContentLoaded', () => {
     playNext();
   });
 
-  // タイムラインへのドロップ
-// dragoverは一度だけ登録
+// 重複している dragover リスナーの明示的定義が抜けているため追加推奨
 timelineTrack.addEventListener('dragover', e => e.preventDefault());
-
-timelineTrack.addEventListener('drop', (e) => {
-  e.preventDefault();
+timelineTrack.addEventListener('dragenter', () => {
+  timelineTrack.classList.add('dragover');
+});
+timelineTrack.addEventListener('dragleave', () => {
   timelineTrack.classList.remove('dragover');
-
+});
+timelineTrack.addEventListener('drop', (e) => {
+  timelineTrack.classList.remove('dragover');
+  e.preventDefault();
   const fileName = e.dataTransfer.getData('text/plain');
   if (!fileName) return;
-
-  const video = document.createElement('video');
+    const video = document.createElement('video');
   video.src = `media/${fileName}`;
   video.preload = 'metadata';
   video.muted = true;
@@ -93,7 +95,10 @@ timelineTrack.addEventListener('drop', (e) => {
     const deleteBtn = document.createElement('button');
     deleteBtn.className = 'clip-delete';
     deleteBtn.textContent = '×';
-    deleteBtn.addEventListener('click', () => clip.remove());
+    deleteBtn.addEventListener('click', () => {
+      clip.remove();
+      layoutRippleTimeline();
+    });
 
     clip.appendChild(leftHandle);
     clip.appendChild(rightHandle);
@@ -103,10 +108,22 @@ timelineTrack.addEventListener('drop', (e) => {
     timelineTrack.appendChild(clip);
     setupHandleDrag(clip, leftHandle, 'left');
     setupHandleDrag(clip, rightHandle, 'right');
+    layoutRippleTimeline();
     updateTimelineView();
   });
 });
 
+// リップル配置処理
+function layoutRippleTimeline() {
+  let offset = 0;
+  const clips = document.querySelectorAll('.timeline-clip');
+  clips.forEach(clip => {
+    const duration = parseFloat(clip.dataset.out) - parseFloat(clip.dataset.in);
+    const width = duration * pixelsPerSecond();
+    clip.style.left = `${offset}px`;
+    offset += width + 4; // マージン4px
+  });
+}
   function pixelsPerSecond() {
     return isZoomed ? 100 : 20;
   }
@@ -125,6 +142,7 @@ timelineTrack.addEventListener('drop', (e) => {
     waveformImg.style.width = `${width}px`;
     renderTimecodeBar(width);
     updateClipWidths();
+ layoutRippleTimeline(); // ←追加推奨
   }
 
   function renderTimecodeBar(width) {

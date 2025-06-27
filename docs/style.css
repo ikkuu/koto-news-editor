@@ -80,11 +80,15 @@ body {
 }
 
 .timeline {
+  position: fixed;
+  bottom: 0;
+  left: 0;
   width: 100%;
   background-color: #f8f8f8;
-  padding: 10px;
-  box-sizing: border-box;
-  flex-shrink: 0;
+  z-index: 1000;
+  border-top: 1px solid #ccc;
+  padding: 8px 0;
+  overflow-x: auto;
 }
 
 .timecode-bar {
