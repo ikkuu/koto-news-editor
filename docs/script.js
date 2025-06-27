@@ -1,28 +1,42 @@
 // script.js
 
+// === script.js ===
 document.addEventListener('DOMContentLoaded', () => {
-  const mediaFiles = ['001.mp4', '002.mp4', '003.mp4', '004.mp4', '005.mp4', '006.mp4', '007.mp4', '008.mp4', '009.mp4', '010.mp4', '011.mp4', '012.mp4', '013.mp4', '014.mp4', '015.mp4', '016.mp4', '017.mp4', '018.mp4', '019.mp4', '020.mp4', '021.mp4', '022.mp4', '023.mp4'];
+  const mediaFiles =['001.mp4', '002.mp4', '003.mp4', '004.mp4', '005.mp4', '006.mp4', '007.mp4', '008.mp4', '009.mp4', '010.mp4', '011.mp4', '012.mp4', '013.mp4', '014.mp4', '015.mp4', '016.mp4', '017.mp4', '018.mp4', '019.mp4', '020.mp4', '021.mp4', '022.mp4', '023.mp4'];
   const mediaPanel = document.getElementById('mediaPanel');
   const timelineTrack = document.querySelector('.clip-track');
   const zoomToggle = document.getElementById('zoom-toggle');
   const waveformImg = document.getElementById('waveform-img');
   const timecodeBar = document.getElementById('timecode-bar');
+  const playhead = document.getElementById('playhead');
+const previewVideo = document.getElementById('preview-video');
+const fullPreviewButton = document.getElementById('preview-play-all');
+
+fullPreviewButton.addEventListener('click', () => {
+  if (!mediaFiles.length) return;
+
+  let currentIndex = 0;
+
+  function playNext() {
+    if (currentIndex >= mediaFiles.length) return;
+
+    previewVideo.src = `media/${mediaFiles[currentIndex]}`;
+    previewVideo.play();
+
+    previewVideo.onended = () => {
+      currentIndex++;
+      playNext();
+    };
+  }
+
+  playNext();
+});
+
   const TIMELINE_WIDTH_FULL = 1000;
   const TIMELINE_WIDTH_ZOOM = 4000;
   let isZoomed = false;
 
-  // ユーザー操作でiOS再生許可
-  document.addEventListener('touchstart', () => {
-    const audio = document.getElementById('voiceover-audio');
-    if (audio && audio.paused) {
-      audio.play().catch(() => {});
-    }
-  }, { once: true });
-
-  // ピクセル/秒
-  const pixelsPerSecond = () => (isZoomed ? 100 : 20);
-
-  // メディアサムネイル生成
+  // === Media Panel ===
   mediaFiles.forEach(file => {
     const container = document.createElement('div');
     container.className = 'media-item';
@@ -33,9 +47,9 @@ document.addEventListener('DOMContentLoaded', () => {
     video.muted = true;
     video.autoplay = true;
     video.preload = 'metadata';
-    video.width = 160;
-    video.height = 90;
-    video.addEventListener('loadedmetadata', () => video.currentTime = 0.1);
+    video.width = 100;
+    video.height = 56;
+    video.currentTime = 0.1;
 
     const label = document.createElement('div');
     label.textContent = file;
@@ -49,7 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // ドロップ処理
+  // === Drag and Drop ===
   timelineTrack.addEventListener('dragover', (e) => e.preventDefault());
   timelineTrack.addEventListener('drop', (e) => {
     e.preventDefault();
@@ -78,22 +92,25 @@ document.addEventListener('DOMContentLoaded', () => {
       const rightHandle = document.createElement('div');
       rightHandle.className = 'handle handle-right';
 
-      setupHandleDrag(clip, leftHandle, 'left');
-      setupHandleDrag(clip, rightHandle, 'right');
+      const deleteBtn = document.createElement('button');
+      deleteBtn.className = 'clip-delete';
+      deleteBtn.textContent = '×';
+      deleteBtn.addEventListener('click', () => clip.remove());
 
       clip.appendChild(leftHandle);
-      clip.appendChild(label);
       clip.appendChild(rightHandle);
+      clip.appendChild(label);
+      clip.appendChild(deleteBtn);
 
       timelineTrack.appendChild(clip);
-      updateClipWidthsAndTimecode();
+      setupHandleDrag(clip, leftHandle, 'left');
+      setupHandleDrag(clip, rightHandle, 'right');
+      updateTimelineView();
     });
   });
 
-  // ハンドルドラッグ設定
   function setupHandleDrag(clip, handle, side) {
     let isDragging = false;
-
     handle.addEventListener('pointerdown', (e) => {
       e.preventDefault();
       isDragging = true;
@@ -106,16 +123,15 @@ document.addEventListener('DOMContentLoaded', () => {
       function onPointerMove(e) {
         if (!isDragging) return;
         const deltaX = e.clientX - startX;
-        const deltaSec = deltaX / pps;
-
+        const deltaSeconds = deltaX / pps;
         if (side === 'left') {
-          const newIn = Math.max(0, Math.min(startOut - 0.1, startIn + deltaSec));
+          const newIn = Math.max(0, Math.min(startOut - 0.1, startIn + deltaSeconds));
           clip.dataset.in = newIn.toFixed(2);
         } else {
-          const newOut = Math.min(duration, Math.max(startIn + 0.1, startOut + deltaSec));
+          const newOut = Math.min(duration, Math.max(startIn + 0.1, startOut + deltaSeconds));
           clip.dataset.out = newOut.toFixed(2);
         }
-        updateClipWidthsAndTimecode();
+        updateClipWidths();
       }
 
       function onPointerUp() {
@@ -129,12 +145,24 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  function updateClipWidthsAndTimecode() {
-    document.querySelectorAll('.timeline-clip').forEach(clip => {
+  function updateTimelineView() {
+    const width = isZoomed ? TIMELINE_WIDTH_ZOOM : TIMELINE_WIDTH_FULL;
+    timelineTrack.style.width = `${width}px`;
+    waveformImg.style.width = `${width}px`;
+    renderTimecodeBar(width);
+    updateClipWidths();
+  }
+
+  function pixelsPerSecond() {
+    return isZoomed ? 100 : 20;
+  }
+
+  function updateClipWidths() {
+    const clips = document.querySelectorAll('.timeline-clip');
+    clips.forEach(clip => {
       const duration = parseFloat(clip.dataset.out) - parseFloat(clip.dataset.in);
       clip.style.width = `${duration * pixelsPerSecond()}px`;
     });
-    renderTimecodeBar(isZoomed ? TIMELINE_WIDTH_ZOOM : TIMELINE_WIDTH_FULL);
   }
 
   function renderTimecodeBar(width) {
@@ -155,14 +183,6 @@ document.addEventListener('DOMContentLoaded', () => {
     updateTimelineView();
   });
 
-  function updateTimelineView() {
-    const width = isZoomed ? TIMELINE_WIDTH_ZOOM : TIMELINE_WIDTH_FULL;
-    timelineTrack.style.width = `${width}px`;
-    waveformImg.style.width = `${width}px`;
-    waveformImg.style.objectPosition = 'left';
-    renderTimecodeBar(width);
-    updateClipWidthsAndTimecode();
-  }
-
   updateTimelineView();
 });
+
