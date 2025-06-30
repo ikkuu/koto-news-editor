@@ -216,3 +216,90 @@ function layoutRippleTimeline() {
 
   updateTimelineView();
 });
+
+// Ripple editing and clip reordering logic (base functions)
+document.addEventListener('DOMContentLoaded', () => {
+  let selectedClip = null;
+
+  // --- Clip selection ---
+  document.addEventListener('click', (e) => {
+    if (e.target.classList.contains('timeline-clip')) {
+      document.querySelectorAll('.timeline-clip.selected').forEach(el => el.classList.remove('selected'));
+      selectedClip = e.target;
+      selectedClip.classList.add('selected');
+    } else {
+      document.querySelectorAll('.timeline-clip.selected').forEach(el => el.classList.remove('selected'));
+      selectedClip = null;
+    }
+  });
+
+  // --- Reorder clips (swap with previous/next) ---
+  function swapClipPosition(direction) {
+    if (!selectedClip) return;
+    const clips = Array.from(document.querySelectorAll('.timeline-clip'));
+    const index = clips.indexOf(selectedClip);
+    const targetIndex = direction === 'left' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= clips.length) return;
+    const referenceNode = direction === 'left' ? clips[targetIndex] : clips[targetIndex].nextSibling;
+    selectedClip.parentNode.insertBefore(selectedClip, referenceNode);
+    layoutRippleTimeline();
+  }
+
+  // Optional: Buttons or key bindings to call swapClipPosition('left') / ('right')
+  // e.g.
+  // document.getElementById('swap-left').addEventListener('click', () => swapClipPosition('left'));
+
+  // --- Adjust timeline after trimming a clip ---
+  function layoutRippleTimeline() {
+    let offset = 0;
+    const clips = document.querySelectorAll('.timeline-clip');
+    clips.forEach(clip => {
+      const duration = parseFloat(clip.dataset.out) - parseFloat(clip.dataset.in);
+      const width = duration * pixelsPerSecond();
+      clip.style.left = `${offset}px`;
+      offset += width + 4; // margin
+    });
+  }
+
+  // --- Adjust ripple shift for handles ---
+  function setupHandleDrag(clip, handle, side) {
+    let isDragging = false;
+    handle.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      isDragging = true;
+      const startX = e.clientX;
+      const startIn = parseFloat(clip.dataset.in);
+      const startOut = parseFloat(clip.dataset.out);
+      const duration = parseFloat(clip.dataset.duration);
+      const pps = pixelsPerSecond();
+      const index = Array.from(document.querySelectorAll('.timeline-clip')).indexOf(clip);
+
+      function onPointerMove(e) {
+        if (!isDragging) return;
+        const deltaX = e.clientX - startX;
+        const deltaSeconds = deltaX / pps;
+        if (side === 'left') {
+          const newIn = Math.max(0, Math.min(startOut - 0.1, startIn + deltaSeconds));
+          clip.dataset.in = newIn.toFixed(2);
+        } else {
+          const newOut = Math.min(duration, Math.max(startIn + 0.1, startOut + deltaSeconds));
+          clip.dataset.out = newOut.toFixed(2);
+        }
+        updateClipWidths();
+        layoutRippleTimeline();
+      }
+
+      function onPointerUp() {
+        isDragging = false;
+        window.removeEventListener('pointermove', onPointerMove);
+        window.removeEventListener('pointerup', onPointerUp);
+      }
+
+      window.addEventListener('pointermove', onPointerMove);
+      window.addEventListener('pointerup', onPointerUp);
+    });
+  }
+
+  // Ensure existing clips and new ones use this logic
+  // updateClipWidths() & pixelsPerSecond() must exist globally
+});
