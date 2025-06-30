@@ -112,13 +112,12 @@ width: 100px;
 }
 
 #waveform-img {
-  width: 100%;
-  height: auto;
+  width: 100%; /* 横幅は親要素基準で縮小済み */
+  height: 40%; /* 表示高を抑える */
   object-fit: cover;
-  object-position: center 50%;
-  clip-path: inset(30% 0% 30% 0%);
+  object-position: center;
+  display: block;
 }
-
 .clip-track {
   position: relative;
   height: 50px;
