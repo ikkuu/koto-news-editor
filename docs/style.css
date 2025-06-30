@@ -108,7 +108,7 @@ width: 100px;
   width: 85%;
   overflow: hidden;
   position: relative;
-  height: 100px; /* 表示したい高さに応じて調整 */
+  height: 60px; /* 表示したい高さに応じて調整 */
 }
 
 #waveform-img {
