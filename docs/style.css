@@ -108,7 +108,7 @@ width: 100px;
   width: 85%;
   overflow: hidden;
   position: relative;
-  height: 60px; /* 表示したい高さに応じて調整 */
+  height: 50px; /* 表示したい高さに応じて調整 */
 }
 
 #waveform-img {
@@ -140,7 +140,7 @@ width: 100px;
 .handle {
   position: absolute;
   top: 0;
-  width: 6px;
+  width: 10px;
   height: 100%;
   background: #000;
   cursor: ew-resize;
@@ -157,7 +157,7 @@ width: 100px;
 
 #playhead {
   position: absolute;
-  width: 2px;
+  width: 6px;
   height: 100%;
   background-color: red;
   top: 0;
