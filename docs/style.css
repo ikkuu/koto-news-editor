@@ -136,6 +136,10 @@ width: 100px;
   box-sizing: border-box;
   overflow: hidden;
 }
+.timeline-clip.selected {
+  background-color: #fff9c4; /* 薄い黄色 */
+  outline: 2px solid #fbc02d;
+}
 
 .handle {
   position: absolute;
