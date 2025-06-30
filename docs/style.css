@@ -105,15 +105,18 @@ width: 100px;
 }
 
 #waveform-wrapper {
-  width: 100%;
-  overflow-x: auto;
-  margin-bottom: 5px;
+  width: 85%;
+  overflow: hidden;
+  position: relative;
+  height: 100px; /* 表示したい高さに応じて調整 */
 }
 
 #waveform-img {
   width: 100%;
-  object-fit: contain;
-  display: block;
+  height: auto;
+  object-fit: cover;
+  object-position: center 50%;
+  clip-path: inset(30% 0% 30% 0%);
 }
 
 .clip-track {
