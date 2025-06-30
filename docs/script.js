@@ -137,11 +137,15 @@ function layoutRippleTimeline() {
   }
 
   function updateTimelineView() {
-    const width = isZoomed ? TIMELINE_WIDTH_ZOOM : TIMELINE_WIDTH_FULL;
-    timelineTrack.style.width = `${width}px`;
-    waveformImg.style.width = `${width}px`;
-    renderTimecodeBar(width);
-    updateClipWidths();
+  const width = isZoomed ? TIMELINE_WIDTH_ZOOM : TIMELINE_WIDTH_FULL;
+
+  // 3つとも同じ横幅を強制適用
+  timelineTrack.style.width = `${width}px`;
+  waveformImg.style.width = `${width}px`;
+  timecodeBar.style.width = `${width}px`;
+
+  renderTimecodeBar(width);
+  updateClipWidths();
  layoutRippleTimeline(); // ←追加推奨
   }
 
