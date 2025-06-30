@@ -10,9 +10,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const playhead = document.getElementById('playhead');
   const previewVideo = document.getElementById('preview-video');
   const fullPreviewButton = document.getElementById('preview-play-all');
+let isZoomed = false;
+function pixelsPerSecond() {
+  return isZoomed ? 100 : 20;
+}
 
   const TIMELINE_DURATION = 40; // ここで40秒を基準に
-const PIXELS_PER_SECOND = isZoomed ? 100 : 20;
 const TIMELINE_WIDTH_FULL = TIMELINE_DURATION * 20;
 const TIMELINE_WIDTH_ZOOM = TIMELINE_DURATION * 100;
 
