@@ -128,9 +128,7 @@ function layoutRippleTimeline() {
     offset += width + 4; // マージン4px
   });
 }
-  function pixelsPerSecond() {
-    return isZoomed ? 100 : 20;
-  }
+ 
 
   function updateClipWidths() {
     const clips = document.querySelectorAll('.timeline-clip');
@@ -140,30 +138,39 @@ function layoutRippleTimeline() {
     });
   }
 
-  function updateTimelineView() {
-  const width = isZoomed ? TIMELINE_WIDTH_ZOOM : TIMELINE_WIDTH_FULL;
+ function updateTimelineView() {
+  const pixelsPerSecond = isZoomed ? 100 : 20;
+  const totalSeconds = 44; // ここを waveform にあわせて 44秒に
+  const totalWidth = pixelsPerSecond * totalSeconds;
 
-  timelineTrack.style.width = `${width}px`;
-  waveformImg.style.width = `${width}px`;
-  timecodeBar.style.width = `${width}px`;  // ← ここ忘れやすい！
+  // 各要素に共通の幅を適用
+  timelineTrack.style.width = `${totalWidth}px`;
+  waveformImg.style.width = `${totalWidth}px`;
+  timecodeBar.style.width = `${totalWidth}px`;
 
-  renderTimecodeBar(width);
-  updateClipWidths();
+  // クリップ幅も更新
+  const clips = document.querySelectorAll('.timeline-clip');
+  clips.forEach(clip => {
+    const duration = parseFloat(clip.dataset.duration) || 0;
+    clip.style.width = `${duration * pixelsPerSecond}px`;
+  });
+
+  renderTimecodeBar(totalSeconds, pixelsPerSecond);
 }
 
 
- function renderTimecodeBar(width) {
+
+ function renderTimecodeBar(durationSeconds, pixelsPerSecond) {
   timecodeBar.innerHTML = '';
-  const pps = pixelsPerSecond();
-  const totalSeconds = TIMELINE_DURATION; // ← 幅に合わせて40秒だけ生成
-  for (let i = 0; i <= totalSeconds; i++) {
+  for (let i = 0; i <= durationSeconds; i++) {
     const label = document.createElement('div');
     label.className = 'timecode-label';
     label.textContent = `${i}s`;
-    label.style.minWidth = `${pps}px`;
+    label.style.minWidth = `${pixelsPerSecond}px`;
     timecodeBar.appendChild(label);
   }
 }
+
 
 
   function setupHandleDrag(clip, handle, side) {
