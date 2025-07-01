@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const previewVideo = document.getElementById('preview-video');
   const fullPreviewButton = document.getElementById('preview-play-all');
   const downloadEDLButton = document.getElementById('download-edl');
+  const playhead = document.getElementById('playhead');
 
   let isZoomed = false;
   let selectedClip = null;
@@ -138,6 +139,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   timelineTrack.addEventListener('dragover', e => e.preventDefault());
+
   timelineTrack.addEventListener('drop', (e) => {
     e.preventDefault();
     const fileName = e.dataTransfer.getData('text/plain');
@@ -181,15 +183,6 @@ document.addEventListener('DOMContentLoaded', () => {
         selectedClip = clip;
       });
 
-      clip.addEventListener('dragstart', (e) => {
-        clip.classList.add('dragging');
-        e.dataTransfer.setData('text/clip-index', Array.from(timelineTrack.children).indexOf(clip));
-      });
-
-      clip.addEventListener('dragend', () => {
-        clip.classList.remove('dragging');
-      });
-
       timelineTrack.appendChild(clip);
       setupHandleDrag(clip, leftHandle, 'left');
       setupHandleDrag(clip, rightHandle, 'right');
@@ -198,67 +191,52 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  timelineTrack.addEventListener('drop', (e) => {
-    e.preventDefault();
-    const index = e.dataTransfer.getData('text/clip-index');
-    const clips = Array.from(timelineTrack.children);
-    const dragged = clips[index];
-    const dropTarget = Array.from(clips).find(el => el !== dragged && el.matches(':hover'));
-    if (dropTarget) {
-      timelineTrack.insertBefore(dragged, dropTarget.nextSibling);
-      layoutRippleTimeline();
-    }
-  });
-
   zoomToggle.addEventListener('click', () => {
     isZoomed = !isZoomed;
     updateTimelineView();
   });
 
- function exportEDL() {
-  const clips = document.querySelectorAll('.timeline-clip');
-  let edl = 'TITLE: MyTimeline\nFCM: NON-DROP FRAME\n\n';
-  let timelineIn = 0;
+  function exportEDL() {
+    const clips = document.querySelectorAll('.timeline-clip');
+    let edl = 'TITLE: MyTimeline\nFCM: NON-DROP FRAME\n\n';
+    let timelineIn = 0;
 
-  clips.forEach((clip, index) => {
-    const reel = clip.querySelector('.clip-label').textContent.replace('.mp4', '');
-    const inSec = parseFloat(clip.dataset.in);
-    const outSec = parseFloat(clip.dataset.out);
-    const duration = outSec - inSec;
+    clips.forEach((clip, index) => {
+      const reel = clip.querySelector('.clip-label').textContent.replace('.mp4', '');
+      const inSec = parseFloat(clip.dataset.in);
+      const outSec = parseFloat(clip.dataset.out);
+      const duration = outSec - inSec;
 
-    const timelineOut = timelineIn + duration;
-    const toTimecode = s => {
-      const hrs = Math.floor(s / 3600);
-      const min = Math.floor((s % 3600) / 60);
-      const sec = Math.floor(s % 60);
-      const frm = Math.floor((s % 1) * 30);
-      return `${hrs.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}:${frm.toString().padStart(2, '0')}`;
-    };
+      const timelineOut = timelineIn + duration;
+      const toTimecode = s => {
+        const hrs = Math.floor(s / 3600);
+        const min = Math.floor((s % 3600) / 60);
+        const sec = Math.floor(s % 60);
+        const frm = Math.floor((s % 1) * 30);
+        return `${hrs.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}:${frm.toString().padStart(2, '0')}`;
+      };
 
-    edl += `${(index+1).toString().padStart(3, '0')}  ${reel}  V  C  ${toTimecode(inSec)} ${toTimecode(outSec)} ${toTimecode(timelineIn)} ${toTimecode(timelineOut)}\n`;
+      edl += `${(index+1).toString().padStart(3, '0')}  ${reel}  V  C  ${toTimecode(inSec)} ${toTimecode(outSec)} ${toTimecode(timelineIn)} ${toTimecode(timelineOut)}\n`;
+      timelineIn = timelineOut;
+    });
 
-    timelineIn = timelineOut;
+    const blob = new Blob([edl], { type: 'text/plain' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'timeline.edl';
+    a.click();
+  }
+
+  downloadEDLButton.addEventListener('click', exportEDL);
+
+  function updatePlayhead() {
+    const pps = pixelsPerSecond();
+    const current = previewVideo.currentTime || 0;
+    playhead.style.left = `${current * pps}px`;
+  }
+
+  previewVideo.addEventListener('timeupdate', updatePlayhead);
+  previewVideo.addEventListener('ended', () => {
+    playhead.style.left = `0px`;
   });
-
-  const blob = new Blob([edl], { type: 'text/plain' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'timeline.edl';
-  a.click();
-}
-
-// 再生位置更新
-function updatePlayhead() {
-  const pps = pixelsPerSecond();
-  const current = previewVideo.currentTime || 0;
-  playhead.style.left = `${current * pps}px`;
-}
-
-// 再生中に定期更新
-previewVideo.addEventListener('timeupdate', updatePlayhead);
-
-// 再生停止時にリセット（必要なら）
-previewVideo.addEventListener('ended', () => {
-  playhead.style.left = `0px`;
 });
-
