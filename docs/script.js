@@ -5,10 +5,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const zoomToggle = document.getElementById('zoom-toggle');
   const waveformImg = document.getElementById('waveform-img');
   const timecodeBar = document.getElementById('timecode-bar');
-  const playhead = document.getElementById('playhead');
   const previewVideo = document.getElementById('preview-video');
   const fullPreviewButton = document.getElementById('preview-play-all');
-  const exportEDLButton = document.getElementById('export-edl');
+  const downloadEDLButton = document.getElementById('download-edl');
 
   let isZoomed = false;
   let selectedClip = null;
@@ -21,129 +20,12 @@ document.addEventListener('DOMContentLoaded', () => {
     return isZoomed ? 100 : 20;
   }
 
-  mediaFiles.forEach(file => {
-    const container = document.createElement('div');
-    container.className = 'media-item';
-    container.draggable = true;
-
-    const baseName = file.replace(/\.[^/.]+$/, "");
-    const img = document.createElement('img');
-    img.src = `media/${baseName}.jpg`;
-    img.alt = file;
-
-    const label = document.createElement('div');
-    label.textContent = file;
-
-    container.appendChild(img);
-    container.appendChild(label);
-    mediaPanel.appendChild(container);
-
-    container.addEventListener('dragstart', (e) => {
-      e.dataTransfer.setData('text/plain', file);
-    });
-  });
-
-  fullPreviewButton.addEventListener('click', () => {
-    if (!mediaFiles.length) return;
-    let currentIndex = 0;
-
-    function playNext() {
-      if (currentIndex >= mediaFiles.length) return;
-      previewVideo.src = `media/${mediaFiles[currentIndex]}`;
-      previewVideo.play();
-      previewVideo.onended = () => {
-        currentIndex++;
-        playNext();
-      };
-    }
-
-    playNext();
-  });
-
-  timelineTrack.addEventListener('dragover', e => e.preventDefault());
-  timelineTrack.addEventListener('dragenter', () => timelineTrack.classList.add('dragover'));
-  timelineTrack.addEventListener('dragleave', () => timelineTrack.classList.remove('dragover'));
-
-  timelineTrack.addEventListener('drop', (e) => {
-    timelineTrack.classList.remove('dragover');
-    e.preventDefault();
-    const fileName = e.dataTransfer.getData('text/plain');
-    if (!fileName) return;
-
-    const video = document.createElement('video');
-    video.src = `media/${fileName}`;
-    video.preload = 'metadata';
-    video.muted = true;
-
-    video.addEventListener('loadedmetadata', () => {
-      const duration = video.duration;
-      const clip = document.createElement('div');
-      clip.className = 'timeline-clip';
-      clip.dataset.in = 0;
-      clip.dataset.out = duration;
-      clip.dataset.duration = duration;
-      clip.dataset.filename = fileName;
-
-      const label = document.createElement('div');
-      label.className = 'clip-label';
-      label.textContent = fileName;
-
-      const leftHandle = document.createElement('div');
-      leftHandle.className = 'handle handle-left';
-      const rightHandle = document.createElement('div');
-      rightHandle.className = 'handle handle-right';
-
-      const deleteBtn = document.createElement('button');
-      deleteBtn.className = 'clip-delete';
-      deleteBtn.textContent = '×';
-      deleteBtn.addEventListener('click', () => {
-        clip.remove();
-        layoutRippleTimeline();
-      });
-
-      clip.appendChild(leftHandle);
-      clip.appendChild(rightHandle);
-      clip.appendChild(label);
-      clip.appendChild(deleteBtn);
-
-      timelineTrack.appendChild(clip);
-      setupHandleDrag(clip, leftHandle, 'left');
-      setupHandleDrag(clip, rightHandle, 'right');
-      layoutRippleTimeline();
-      updateTimelineView();
-    });
-  });
-
-  function layoutRippleTimeline() {
-    let offset = 0;
-    const clips = document.querySelectorAll('.timeline-clip');
-    clips.forEach(clip => {
-      const duration = parseFloat(clip.dataset.out) - parseFloat(clip.dataset.in);
-      const width = duration * pixelsPerSecond();
-      clip.style.left = `${offset}px`;
-      offset += width + 4;
-    });
-  }
-
   function updateClipWidths() {
     const clips = document.querySelectorAll('.timeline-clip');
     clips.forEach(clip => {
       const duration = parseFloat(clip.dataset.out) - parseFloat(clip.dataset.in);
       clip.style.width = `${duration * pixelsPerSecond()}px`;
     });
-  }
-
-  function updateTimelineView() {
-    const pps = pixelsPerSecond();
-    const totalSeconds = 44;
-    const totalWidth = pps * totalSeconds;
-
-    timelineTrack.style.width = `${totalWidth}px`;
-    waveformImg.style.width = `${totalWidth}px`;
-    timecodeBar.style.width = `${totalWidth}px`;
-
-    updateClipWidths();
-    renderTimecodeBar(totalSeconds, pps);
   }
 
   function renderTimecodeBar(durationSeconds, pps) {
@@ -155,6 +37,29 @@ document.addEventListener('DOMContentLoaded', () => {
       label.style.minWidth = `${pps}px`;
       timecodeBar.appendChild(label);
     }
+  }
+
+  function updateTimelineView() {
+    const pps = pixelsPerSecond();
+    const totalSeconds = 44;
+    const totalWidth = totalSeconds * pps;
+
+    timelineTrack.style.width = `${totalWidth}px`;
+    waveformImg.style.width = `${totalWidth}px`;
+    timecodeBar.style.width = `${totalWidth}px`;
+
+    updateClipWidths();
+    renderTimecodeBar(totalSeconds, pps);
+  }
+
+  function layoutRippleTimeline() {
+    let offset = 0;
+    document.querySelectorAll('.timeline-clip').forEach(clip => {
+      const duration = parseFloat(clip.dataset.out) - parseFloat(clip.dataset.in);
+      const width = duration * pixelsPerSecond();
+      clip.style.left = `${offset}px`;
+      offset += width + 4;
+    });
   }
 
   function setupHandleDrag(clip, handle, side) {
@@ -195,15 +100,119 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  document.addEventListener('click', (e) => {
-    if (e.target.classList.contains('timeline-clip')) {
-      document.querySelectorAll('.timeline-clip.selected').forEach(el => el.classList.remove('selected'));
-      selectedClip = e.target;
-      selectedClip.classList.add('selected');
-    } else {
-      document.querySelectorAll('.timeline-clip.selected').forEach(el => el.classList.remove('selected'));
-      selectedClip = null;
+  mediaFiles.forEach(file => {
+    const container = document.createElement('div');
+    container.className = 'media-item';
+    container.draggable = true;
+
+    const baseName = file.replace(/\.[^/.]+$/, "");
+    const img = document.createElement('img');
+    img.src = `media/${baseName}.jpg`;
+    img.alt = file;
+
+    const label = document.createElement('div');
+    label.textContent = file;
+
+    container.appendChild(img);
+    container.appendChild(label);
+    mediaPanel.appendChild(container);
+
+    container.addEventListener('dragstart', (e) => {
+      e.dataTransfer.setData('text/plain', file);
+    });
+  });
+
+  fullPreviewButton.addEventListener('click', () => {
+    if (!mediaFiles.length) return;
+    let currentIndex = 0;
+    function playNext() {
+      if (currentIndex >= mediaFiles.length) return;
+      previewVideo.src = `media/${mediaFiles[currentIndex]}`;
+      previewVideo.play();
+      previewVideo.onended = () => {
+        currentIndex++;
+        playNext();
+      };
     }
+    playNext();
+  });
+
+  timelineTrack.addEventListener('dragover', e => e.preventDefault());
+  timelineTrack.addEventListener('drop', (e) => {
+    e.preventDefault();
+    const fileName = e.dataTransfer.getData('text/plain');
+    if (!fileName) return;
+
+    const video = document.createElement('video');
+    video.src = `media/${fileName}`;
+    video.preload = 'metadata';
+    video.muted = true;
+
+    video.addEventListener('loadedmetadata', () => {
+      const duration = video.duration;
+      const clip = document.createElement('div');
+      clip.className = 'timeline-clip';
+      clip.dataset.in = 0;
+      clip.dataset.out = duration;
+      clip.dataset.duration = duration;
+      clip.draggable = true;
+
+      const label = document.createElement('div');
+      label.className = 'clip-label';
+      label.textContent = fileName;
+
+      const leftHandle = document.createElement('div');
+      leftHandle.className = 'handle handle-left';
+      const rightHandle = document.createElement('div');
+      rightHandle.className = 'handle handle-right';
+
+      const deleteBtn = document.createElement('button');
+      deleteBtn.className = 'clip-delete';
+      deleteBtn.textContent = '×';
+      deleteBtn.addEventListener('click', () => {
+        clip.remove();
+        layoutRippleTimeline();
+      });
+
+      clip.append(leftHandle, rightHandle, label, deleteBtn);
+      clip.addEventListener('click', () => {
+        document.querySelectorAll('.timeline-clip.selected').forEach(el => el.classList.remove('selected'));
+        clip.classList.add('selected');
+        selectedClip = clip;
+      });
+
+      clip.addEventListener('dragstart', (e) => {
+        clip.classList.add('dragging');
+        e.dataTransfer.setData('text/clip-index', Array.from(timelineTrack.children).indexOf(clip));
+      });
+
+      clip.addEventListener('dragend', () => {
+        clip.classList.remove('dragging');
+      });
+
+      timelineTrack.appendChild(clip);
+      setupHandleDrag(clip, leftHandle, 'left');
+      setupHandleDrag(clip, rightHandle, 'right');
+      layoutRippleTimeline();
+      updateTimelineView();
+    });
+  });
+
+  timelineTrack.addEventListener('drop', (e) => {
+    e.preventDefault();
+    const index = e.dataTransfer.getData('text/clip-index');
+    const clips = Array.from(timelineTrack.children);
+    const dragged = clips[index];
+    const dropTarget = Array.from(clips).find(el => el !== dragged && el.matches(':hover'));
+    if (dropTarget) {
+      timelineTrack.insertBefore(dragged, dropTarget.nextSibling);
+      layoutRippleTimeline();
+    }
+  });
+
+  zoomToggle.addEventListener('click', () => {
+    isZoomed = !isZoomed;
+    updateTimelineView();
   });
 
  function exportEDL() {
@@ -238,14 +247,6 @@ document.addEventListener('DOMContentLoaded', () => {
   a.click();
 }
 
-
-  zoomToggle.addEventListener('click', () => {
-    isZoomed = !isZoomed;
-    updateTimelineView();
-  });
-
-  updateTimelineView();
-});
 // 再生位置更新
 function updatePlayhead() {
   const pps = pixelsPerSecond();
@@ -260,3 +261,4 @@ previewVideo.addEventListener('timeupdate', updatePlayhead);
 previewVideo.addEventListener('ended', () => {
   playhead.style.left = `0px`;
 });
+
