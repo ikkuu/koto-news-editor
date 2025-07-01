@@ -206,30 +206,38 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  exportEDLButton.addEventListener('click', () => {
-    const clips = Array.from(document.querySelectorAll('.timeline-clip'));
-    let offset = 0;
-    let edl = '';
+ function exportEDL() {
+  const clips = document.querySelectorAll('.timeline-clip');
+  let edl = 'TITLE: MyTimeline\nFCM: NON-DROP FRAME\n\n';
+  let timelineIn = 0;
 
-    clips.forEach((clip, index) => {
-      const filename = clip.dataset.filename;
-      const inTime = parseFloat(clip.dataset.in).toFixed(2);
-      const outTime = parseFloat(clip.dataset.out).toFixed(2);
-      const duration = (parseFloat(outTime) - parseFloat(inTime)).toFixed(2);
-      const start = (offset / pixelsPerSecond()).toFixed(2);
-      const end = (parseFloat(start) + parseFloat(duration)).toFixed(2);
-      edl += `Clip ${index + 1}: ${filename} In: ${inTime}s Out: ${outTime}s Start: ${start}s End: ${end}s\n`;
-      offset += parseFloat(duration) * pixelsPerSecond() + 4;
-    });
+  clips.forEach((clip, index) => {
+    const reel = clip.querySelector('.clip-label').textContent.replace('.mp4', '');
+    const inSec = parseFloat(clip.dataset.in);
+    const outSec = parseFloat(clip.dataset.out);
+    const duration = outSec - inSec;
 
-    const blob = new Blob([edl], { type: 'text/plain' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = 'timeline.edl.txt';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const timelineOut = timelineIn + duration;
+    const toTimecode = s => {
+      const hrs = Math.floor(s / 3600);
+      const min = Math.floor((s % 3600) / 60);
+      const sec = Math.floor(s % 60);
+      const frm = Math.floor((s % 1) * 30);
+      return `${hrs.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}:${frm.toString().padStart(2, '0')}`;
+    };
+
+    edl += `${(index+1).toString().padStart(3, '0')}  ${reel}  V  C  ${toTimecode(inSec)} ${toTimecode(outSec)} ${toTimecode(timelineIn)} ${toTimecode(timelineOut)}\n`;
+
+    timelineIn = timelineOut;
   });
+
+  const blob = new Blob([edl], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'timeline.edl';
+  a.click();
+}
+
 
   zoomToggle.addEventListener('click', () => {
     isZoomed = !isZoomed;
@@ -237,4 +245,18 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   updateTimelineView();
+});
+// 再生位置更新
+function updatePlayhead() {
+  const pps = pixelsPerSecond();
+  const current = previewVideo.currentTime || 0;
+  playhead.style.left = `${current * pps}px`;
+}
+
+// 再生中に定期更新
+previewVideo.addEventListener('timeupdate', updatePlayhead);
+
+// 再生停止時にリセット（必要なら）
+previewVideo.addEventListener('ended', () => {
+  playhead.style.left = `0px`;
 });

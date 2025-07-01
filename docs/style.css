@@ -161,11 +161,11 @@ width: 100px;
 
 #playhead {
   position: absolute;
-  width: 6px;
-  height: 100%;
-  background-color: red;
   top: 0;
-  left: 0;
+  bottom: 0;
+  width: 2px;
+  background: red;
+  z-index: 10;
   pointer-events: none;
 }
 
