@@ -7,19 +7,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const timecodeBar = document.getElementById('timecode-bar');
   const previewVideo = document.getElementById('preview-video');
   const fullPreviewButton = document.getElementById('preview-play-all');
-  const playFromStartButton = document.getElementById('preview-play-start');
-  const playFromHeadButton = document.getElementById('preview-play-head');
+  const playFromStartButton = document.getElementById('preview-from-start');
+  const playFromHeadButton = document.getElementById('preview-from-playhead');
+  const exportEDLButton = document.getElementById('export-edl');
   let isZoomed = false;
+  let selectedClip = null;
+  let playhead = document.getElementById('playhead');
 
   const TIMELINE_DURATION = 40;
   const TIMELINE_WIDTH_FULL = TIMELINE_DURATION * 20;
   const TIMELINE_WIDTH_ZOOM = TIMELINE_DURATION * 100;
-
-  let selectedClip = null;
-  let currentPreviewIndex = 0;
-  let playhead = document.createElement('div');
-  playhead.className = 'playhead-line';
-  timelineTrack.appendChild(playhead);
 
   function pixelsPerSecond() {
     return isZoomed ? 100 : 20;
@@ -61,6 +58,47 @@ document.addEventListener('DOMContentLoaded', () => {
       const width = duration * pixelsPerSecond();
       clip.style.left = `${offset}px`;
       offset += width + 4;
+    });
+  }
+
+  function setupHandleDrag(clip, handle, side) {
+    let isDragging = false;
+
+    handle.addEventListener('pointerdown', (e) => {
+      if (!clip.classList.contains('selected')) return;
+      e.preventDefault();
+      isDragging = true;
+      const startX = e.clientX;
+      const startIn = parseFloat(clip.dataset.in);
+      const startOut = parseFloat(clip.dataset.out);
+      const duration = parseFloat(clip.dataset.duration);
+      const pps = pixelsPerSecond();
+
+      function onPointerMove(e) {
+        if (!isDragging) return;
+        const deltaX = e.clientX - startX;
+        const deltaSeconds = deltaX / pps;
+
+        if (side === 'left') {
+          const newIn = Math.max(0, Math.min(startOut - 0.1, startIn + deltaSeconds));
+          clip.dataset.in = newIn.toFixed(2);
+        } else {
+          const newOut = Math.min(duration, Math.max(startIn + 0.1, startOut + deltaSeconds));
+          clip.dataset.out = newOut.toFixed(2);
+        }
+
+        updateClipWidths();
+        layoutRippleTimeline();
+      }
+
+      function onPointerUp() {
+        isDragging = false;
+        window.removeEventListener('pointermove', onPointerMove);
+        window.removeEventListener('pointerup', onPointerUp);
+      }
+
+      window.addEventListener('pointermove', onPointerMove);
+      window.addEventListener('pointerup', onPointerUp);
     });
   }
 
@@ -113,11 +151,16 @@ document.addEventListener('DOMContentLoaded', () => {
         clip.remove();
         layoutRippleTimeline();
       });
+
       clip.appendChild(leftHandle);
       clip.appendChild(rightHandle);
       clip.appendChild(label);
       clip.appendChild(deleteBtn);
       timelineTrack.appendChild(clip);
+
+      setupHandleDrag(clip, leftHandle, 'left');
+      setupHandleDrag(clip, rightHandle, 'right');
+
       layoutRippleTimeline();
       updateTimelineView();
     });
@@ -125,37 +168,74 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.addEventListener('click', (e) => {
     document.querySelectorAll('.timeline-clip').forEach(el => el.classList.remove('selected'));
-    if (e.target.classList.contains('timeline-clip')) {
-      selectedClip = e.target;
+    if (e.target.closest('.timeline-clip')) {
+      selectedClip = e.target.closest('.timeline-clip');
       selectedClip.classList.add('selected');
     } else {
       selectedClip = null;
     }
   });
 
-  fullPreviewButton.addEventListener('click', () => {
-    currentPreviewIndex = 0;
-    playSequentially();
-  });
-
-  function playSequentially() {
-    const clips = Array.from(document.querySelectorAll('.timeline-clip'));
-    if (currentPreviewIndex >= clips.length) return;
-    const clip = clips[currentPreviewIndex];
-    const label = clip.querySelector('.clip-label').textContent;
-    previewVideo.src = `media/${label}`;
-    previewVideo.play();
-    const left = parseFloat(clip.style.left || '0');
-    playhead.style.left = `${left}px`;
-    previewVideo.onended = () => {
-      currentPreviewIndex++;
-      playSequentially();
-    };
-  }
-
   zoomToggle.addEventListener('click', () => {
     isZoomed = !isZoomed;
     updateTimelineView();
+  });
+
+  fullPreviewButton.addEventListener('click', () => {
+    const clips = Array.from(document.querySelectorAll('.timeline-clip'));
+    let index = 0;
+    function playNext() {
+      if (index >= clips.length) return;
+      const label = clips[index].querySelector('.clip-label').textContent;
+      previewVideo.src = `media/${label}`;
+      previewVideo.play();
+      const left = parseFloat(clips[index].style.left || '0');
+      playhead.style.left = `${left}px`;
+      previewVideo.onended = () => {
+        index++;
+        playNext();
+      };
+    }
+    playNext();
+  });
+
+  playFromStartButton?.addEventListener('click', () => {
+    previewVideo.currentTime = 0;
+    previewVideo.play();
+  });
+
+  playFromHeadButton?.addEventListener('click', () => {
+    const left = parseFloat(playhead.style.left || '0');
+    const time = left / pixelsPerSecond();
+    previewVideo.currentTime = time;
+    previewVideo.play();
+  });
+
+  exportEDLButton?.addEventListener('click', () => {
+    const clips = document.querySelectorAll('.timeline-clip');
+    let edl = 'TITLE: Simple Edit\nFCM: NON-DROP FRAME\n\n';
+    let startTime = 0;
+    clips.forEach((clip, index) => {
+      const inSec = parseFloat(clip.dataset.in).toFixed(2);
+      const outSec = parseFloat(clip.dataset.out).toFixed(2);
+      const duration = (parseFloat(outSec) - parseFloat(inSec)).toFixed(2);
+      const source = clip.querySelector('.clip-label').textContent;
+      edl += `${String(index + 1).padStart(3, '0')}  AX       V     C        \n`;
+      edl += `* FROM CLIP: ${source}\n`;
+      edl += `* SOURCE IN: ${inSec}s\n`;
+      edl += `* SOURCE OUT: ${outSec}s\n`;
+      edl += `* START: ${startTime.toFixed(2)}s\n`;
+      edl += `* END: ${(parseFloat(startTime) + parseFloat(duration)).toFixed(2)}s\n\n`;
+      startTime += parseFloat(duration);
+    });
+
+    const blob = new Blob([edl], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'edit.edl';
+    a.click();
+    URL.revokeObjectURL(url);
   });
 
   updateTimelineView();
