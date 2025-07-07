@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <title>簡易編集ツール</title>
   <link rel="stylesheet" href="style.css" />
-  <script src="script.js" defer></script>
+  <script src="script_updated.js" defer></script>
   <script src="sync-player.js" defer></script>
 </head>
 <body>
@@ -22,23 +22,25 @@
         <div id="timecode-overlay"></div>
       </div>
       <audio id="voiceover-audio" src="media/silent_1min.wav"></audio>
-      <div class="controls">
-        <button id="play-timeline">▶</button>
-        <button id="zoom-toggle">タイムライン拡大</button>
+      <div class="playback-controls">
+  <button id="preview-from-start">▶ 最初から再生</button>
+  <button id="preview-from-playhead">▶ プレイヘッドから再生</button>
+  <button id="zoom-toggle">タイムライン拡大</button>
 
       </div>
     </div>
   </div>
 
-  <div class="timeline">
+ <div class="editor-container">
+  <!-- タイムラインおよびウェーブフォームの上に重ねる -->
+  <div id="playhead" class="playhead-line"></div>
+ <div class="timeline">
   <div class="timecode-bar" id="timecode-bar"></div>
    <div id="waveform-wrapper">
   <img id="waveform-img" src="media/waveform.png" />
 </div>
   <div class="clip-track"></div>
 </div>
-
-    <div id="playhead"></div>
-  </div>
+</div>
 </body>
 </html>
