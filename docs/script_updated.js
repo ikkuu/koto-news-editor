@@ -188,43 +188,63 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // === 最初から再生 ===
   playFromStart.addEventListener('click', () => {
-    const first = document.querySelector('.timeline-clip');
-    if (!first) return;
-    const label = first.querySelector('.clip-label').textContent;
+  const clips = Array.from(document.querySelectorAll('.timeline-clip'));
+  if (clips.length === 0) return;
+  let i = 0;
+
+  function playNext() {
+    if (i >= clips.length) return;
+    const clip = clips[i];
+    const label = clip.querySelector('.clip-label').textContent;
+    const inTime = parseFloat(clip.dataset.in);
+    const outTime = parseFloat(clip.dataset.out);
+
     previewVideo.src = `media/${label}`;
-    previewVideo.currentTime = parseFloat(first.dataset.in);
+    previewVideo.currentTime = inTime;
     previewVideo.play();
-    voiceover.currentTime = 0;
-    voiceover.play();
-  });
+    playhead.style.left = clip.style.left;
 
-  // === 全素材連続再生（in/out考慮） ===
-  fullPreviewButton.addEventListener('click', () => {
-    const clips = Array.from(document.querySelectorAll('.timeline-clip'));
-    let i = 0;
-
-    const playNext = () => {
-      if (i >= clips.length) return;
-      const clip = clips[i];
-      const label = clip.querySelector('.clip-label').textContent;
-      previewVideo.src = `media/${label}`;
-      previewVideo.currentTime = parseFloat(clip.dataset.in);
-      previewVideo.play();
-      playhead.style.left = clip.style.left;
-
-      previewVideo.ontimeupdate = () => {
-        if (previewVideo.currentTime >= parseFloat(clip.dataset.out)) {
-          previewVideo.pause();
-          i++;
-          playNext();
-        }
-      };
+    previewVideo.ontimeupdate = () => {
+      if (previewVideo.currentTime >= outTime) {
+        previewVideo.pause();
+        i++;
+        playNext();
+      }
     };
+  }
 
-    voiceover.currentTime = 0;
-    voiceover.play();
-    playNext();
-  });
+  voiceover.currentTime = 0;
+  voiceover.play();
+  playNext();
+});
+
+  // === 全素材連続再生 ===
+  fullPreviewButton.addEventListener('click', () => {
+  const clips = Array.from(document.querySelectorAll('.timeline-clip'));
+  if (clips.length === 0) return;
+  let i = 0;
+
+  function playNext() {
+    if (i >= clips.length) return;
+    const clip = clips[i];
+    const label = clip.querySelector('.clip-label').textContent;
+
+    previewVideo.src = `media/${label}`;
+    previewVideo.currentTime = 0;
+    previewVideo.play();
+    playhead.style.left = clip.style.left;
+
+    previewVideo.onended = () => {
+      i++;
+      playNext();
+    };
+  }
+
+  voiceover.pause();
+  voiceover.currentTime = 0;
+  playNext();
+});
+
 
   // === EDL出力 ===
   edlExport.addEventListener('click', () => {
