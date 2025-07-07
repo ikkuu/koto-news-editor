@@ -1,24 +1,26 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const mediaFiles = ['001.mp4', '002.mp4', '003.mp4', '004.mp4', '005.mp4',
+  const mediaFiles = [
+    '001.mp4', '002.mp4', '003.mp4', '004.mp4', '005.mp4',
     '006.mp4', '007.mp4', '008.mp4', '009.mp4', '010.mp4',
     '011.mp4', '012.mp4', '013.mp4', '014.mp4', '015.mp4',
     '016.mp4', '017.mp4', '018.mp4', '019.mp4', '020.mp4',
     '021.mp4', '022.mp4', '023.mp4'
-];
+  ];
+
   const mediaPanel = document.getElementById('mediaPanel');
   const timelineTrack = document.querySelector('.clip-track');
   const zoomToggle = document.getElementById('zoom-toggle');
   const waveformImg = document.getElementById('waveform-img');
   const timecodeBar = document.getElementById('timecode-bar');
   const previewVideo = document.getElementById('preview-video');
-  const voiceoverAudio = document.getElementById('voiceover-audio');
+  const audio = document.getElementById('voiceover-audio');
   const fullPreviewButton = document.getElementById('preview-play-all');
-  const playFromStartBtn = document.getElementById('preview-from-start');
-  const playFromHeadBtn = document.getElementById('preview-from-playhead');
+  const playFromStartButton = document.getElementById('preview-from-start');
+  const playFromHeadButton = document.getElementById('preview-from-playhead');
   const playhead = document.getElementById('playhead');
+  const edlExportButton = document.getElementById('export-edl');
 
   let isZoomed = false;
-  let isPlayingFromHead = false;
   let selectedClip = null;
 
   function pixelsPerSecond() {
@@ -35,6 +37,14 @@ document.addEventListener('DOMContentLoaded', () => {
     updateClipWidths();
   }
 
+  function updateClipWidths() {
+    const clips = document.querySelectorAll('.timeline-clip');
+    clips.forEach(clip => {
+      const duration = parseFloat(clip.dataset.out) - parseFloat(clip.dataset.in);
+      clip.style.width = `${duration * pixelsPerSecond()}px`;
+    });
+  }
+
   function renderTimecodeBar(duration, pps) {
     timecodeBar.innerHTML = '';
     for (let i = 0; i <= duration; i++) {
@@ -44,14 +54,6 @@ document.addEventListener('DOMContentLoaded', () => {
       label.style.minWidth = `${pps}px`;
       timecodeBar.appendChild(label);
     }
-  }
-
-  function updateClipWidths() {
-    const clips = document.querySelectorAll('.timeline-clip');
-    clips.forEach(clip => {
-      const duration = parseFloat(clip.dataset.out) - parseFloat(clip.dataset.in);
-      clip.style.width = `${duration * pixelsPerSecond()}px`;
-    });
   }
 
   function layoutRippleTimeline() {
@@ -92,10 +94,12 @@ document.addEventListener('DOMContentLoaded', () => {
     e.preventDefault();
     const fileName = e.dataTransfer.getData('text/plain');
     if (!fileName) return;
+
     const video = document.createElement('video');
     video.src = `media/${fileName}`;
     video.preload = 'metadata';
     video.muted = true;
+
     video.addEventListener('loadedmetadata', () => {
       const duration = video.duration;
       const clip = document.createElement('div');
@@ -126,6 +130,7 @@ document.addEventListener('DOMContentLoaded', () => {
       clip.appendChild(label);
       clip.appendChild(deleteBtn);
       timelineTrack.appendChild(clip);
+
       setupHandleDrag(clip, leftHandle, 'left');
       setupHandleDrag(clip, rightHandle, 'right');
       layoutRippleTimeline();
@@ -135,10 +140,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function setupHandleDrag(clip, handle, side) {
     let isDragging = false;
+
     handle.addEventListener('pointerdown', (e) => {
       if (!clip.classList.contains('selected')) return;
       e.preventDefault();
       isDragging = true;
+
       const startX = e.clientX;
       const startIn = parseFloat(clip.dataset.in);
       const startOut = parseFloat(clip.dataset.out);
@@ -149,6 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!isDragging) return;
         const deltaX = e.clientX - startX;
         const deltaSeconds = deltaX / pps;
+
         if (side === 'left') {
           const newIn = Math.max(0, Math.min(startOut - 0.1, startIn + deltaSeconds));
           clip.dataset.in = newIn.toFixed(2);
@@ -156,6 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const newOut = Math.min(duration, Math.max(startIn + 0.1, startOut + deltaSeconds));
           clip.dataset.out = newOut.toFixed(2);
         }
+
         updateClipWidths();
         layoutRippleTimeline();
       }
@@ -173,42 +182,89 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.addEventListener('click', (e) => {
     document.querySelectorAll('.timeline-clip').forEach(el => el.classList.remove('selected'));
-    if (e.target.classList.contains('timeline-clip')) {
-      selectedClip = e.target;
+    if (e.target.classList.contains('timeline-clip') || e.target.closest('.timeline-clip')) {
+      selectedClip = e.target.closest('.timeline-clip');
       selectedClip.classList.add('selected');
     } else {
       selectedClip = null;
     }
   });
 
+  fullPreviewButton.addEventListener('click', () => {
+    const clips = document.querySelectorAll('.timeline-clip');
+    let i = 0;
+
+    function playNext() {
+      if (i >= clips.length) return;
+      const clip = clips[i];
+      const label = clip.querySelector('.clip-label').textContent;
+      const left = parseFloat(clip.style.left || '0');
+      playhead.style.left = `${left}px`;
+
+      previewVideo.src = `media/${label}`;
+      previewVideo.play();
+      previewVideo.onended = () => {
+        i++;
+        playNext();
+      };
+    }
+
+    audio.currentTime = 0;
+    audio.play();
+    playNext();
+  });
+
+  playFromStartButton?.addEventListener('click', () => {
+    const firstClip = document.querySelector('.timeline-clip');
+    if (!firstClip) return;
+    const label = firstClip.querySelector('.clip-label').textContent;
+    previewVideo.src = `media/${label}`;
+    previewVideo.play();
+    audio.currentTime = 0;
+    audio.play();
+    playhead.style.left = `${firstClip.style.left}`;
+  });
+
+  playFromHeadButton?.addEventListener('click', () => {
+    const playheadLeft = parseFloat(playhead.style.left || '0');
+    const clips = Array.from(document.querySelectorAll('.timeline-clip'));
+    const clip = clips.find(c => parseFloat(c.style.left || '0') >= playheadLeft);
+    if (!clip) return;
+    const label = clip.querySelector('.clip-label').textContent;
+    previewVideo.src = `media/${label}`;
+    previewVideo.play();
+    audio.currentTime = 0;
+    audio.play();
+    playhead.style.left = `${clip.style.left}`;
+  });
+
+  edlExportButton?.addEventListener('click', () => {
+    const edl = [];
+    const clips = document.querySelectorAll('.timeline-clip');
+    let startTime = 0;
+
+    clips.forEach((clip, i) => {
+      const fileName = clip.querySelector('.clip-label').textContent;
+      const inTime = parseFloat(clip.dataset.in).toFixed(2);
+      const outTime = parseFloat(clip.dataset.out).toFixed(2);
+      const duration = (outTime - inTime).toFixed(2);
+
+      edl.push(`001  AX       V     C        ${inTime} ${outTime} ${startTime.toFixed(2)} ${(startTime + parseFloat(duration)).toFixed(2)}\n* FROM CLIP: ${fileName}`);
+      startTime += parseFloat(duration);
+    });
+
+    const blob = new Blob([edl.join('\n')], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'edit.edl';
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
   zoomToggle.addEventListener('click', () => {
     isZoomed = !isZoomed;
     updateTimelineView();
-  });
-
-  playFromStartBtn.addEventListener('click', () => {
-    previewVideo.currentTime = 0;
-    voiceoverAudio.currentTime = 0;
-    previewVideo.play();
-    voiceoverAudio.play();
-  });
-
-  playFromHeadBtn.addEventListener('click', () => {
-    if (!isPlayingFromHead) {
-      const currentLeft = parseFloat(playhead.style.left || '0');
-      const seconds = currentLeft / pixelsPerSecond();
-      previewVideo.currentTime = seconds;
-      voiceoverAudio.currentTime = seconds;
-      previewVideo.play();
-      voiceoverAudio.play();
-      isPlayingFromHead = true;
-      playFromHeadBtn.innerHTML = '⏸ 一時停止';
-    } else {
-      previewVideo.pause();
-      voiceoverAudio.pause();
-      isPlayingFromHead = false;
-      playFromHeadBtn.innerHTML = '▶ プレイヘッドから再生';
-    }
   });
 
   updateTimelineView();
