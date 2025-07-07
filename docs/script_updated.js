@@ -1,28 +1,22 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const mediaFiles = [
-    '001.mp4', '002.mp4', '003.mp4', '004.mp4', '005.mp4',
-    '006.mp4', '007.mp4', '008.mp4', '009.mp4', '010.mp4',
-    '011.mp4', '012.mp4', '013.mp4', '014.mp4', '015.mp4',
-    '016.mp4', '017.mp4', '018.mp4', '019.mp4', '020.mp4',
-    '021.mp4', '022.mp4', '023.mp4'
-  ];
-
+  const mediaFiles = [...Array(23)].map((_, i) => `${String(i + 1).padStart(3, '0')}.mp4`);
   const mediaPanel = document.getElementById('mediaPanel');
   const timelineTrack = document.querySelector('.clip-track');
-  const zoomToggle = document.getElementById('zoom-toggle');
   const waveformImg = document.getElementById('waveform-img');
   const timecodeBar = document.getElementById('timecode-bar');
   const previewVideo = document.getElementById('preview-video');
-  const audio = document.getElementById('voiceover-audio');
-  const fullPreviewButton = document.getElementById('preview-play-all');
-  const playFromStartButton = document.getElementById('preview-from-start');
-  const playFromHeadButton = document.getElementById('preview-from-playhead');
+  const voiceover = document.getElementById('voiceover-audio');
   const playhead = document.getElementById('playhead');
-  const edlExportButton = document.getElementById('export-edl');
+  const zoomToggle = document.getElementById('zoom-toggle');
+  const playFromStart = document.getElementById('preview-from-start');
+  const playFromHead = document.getElementById('preview-from-playhead');
+  const edlExport = document.getElementById('export-edl');
+  const fullPreviewButton = document.getElementById('preview-play-all');
 
   let isZoomed = false;
   let selectedClip = null;
 
+  // === UIスケール関連 ===
   function pixelsPerSecond() {
     return isZoomed ? 100 : 20;
   }
@@ -30,19 +24,9 @@ document.addEventListener('DOMContentLoaded', () => {
   function updateTimelineView() {
     const pps = pixelsPerSecond();
     const width = pps * 44;
-    timelineTrack.style.width = `${width}px`;
-    waveformImg.style.width = `${width}px`;
-    timecodeBar.style.width = `${width}px`;
+    [timelineTrack, waveformImg, timecodeBar].forEach(el => el.style.width = `${width}px`);
     renderTimecodeBar(44, pps);
     updateClipWidths();
-  }
-
-  function updateClipWidths() {
-    const clips = document.querySelectorAll('.timeline-clip');
-    clips.forEach(clip => {
-      const duration = parseFloat(clip.dataset.out) - parseFloat(clip.dataset.in);
-      clip.style.width = `${duration * pixelsPerSecond()}px`;
-    });
   }
 
   function renderTimecodeBar(duration, pps) {
@@ -56,24 +40,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function layoutRippleTimeline() {
-    let offset = 0;
-    document.querySelectorAll('.timeline-clip').forEach(clip => {
-      const duration = parseFloat(clip.dataset.out) - parseFloat(clip.dataset.in);
-      const width = duration * pixelsPerSecond();
-      clip.style.left = `${offset}px`;
-      offset += width + 4;
-    });
-  }
-
+  // === サムネ表示 ===
   mediaFiles.forEach(file => {
     const container = document.createElement('div');
     container.className = 'media-item';
     container.draggable = true;
 
-    const baseName = file.replace(/\.[^/.]+$/, "");
     const img = document.createElement('img');
-    img.src = `media/${baseName}.jpg`;
+    img.src = `media/${file.replace('.mp4', '.jpg')}`;
     img.alt = file;
 
     const label = document.createElement('div');
@@ -88,18 +62,17 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // === タイムラインに追加 ===
   timelineTrack.addEventListener('dragover', e => e.preventDefault());
-
-  timelineTrack.addEventListener('drop', (e) => {
+  timelineTrack.addEventListener('drop', e => {
     e.preventDefault();
-    const fileName = e.dataTransfer.getData('text/plain');
-    if (!fileName) return;
+    const file = e.dataTransfer.getData('text/plain');
+    if (!file) return;
 
     const video = document.createElement('video');
-    video.src = `media/${fileName}`;
+    video.src = `media/${file}`;
     video.preload = 'metadata';
     video.muted = true;
-
     video.addEventListener('loadedmetadata', () => {
       const duration = video.duration;
       const clip = document.createElement('div');
@@ -108,163 +81,165 @@ document.addEventListener('DOMContentLoaded', () => {
       clip.dataset.out = duration;
       clip.dataset.duration = duration;
 
-      const label = document.createElement('div');
-      label.className = 'clip-label';
-      label.textContent = fileName;
+      clip.innerHTML = `
+        <div class="handle handle-left"></div>
+        <div class="handle handle-right"></div>
+        <div class="clip-label">${file}</div>
+        <button class="clip-delete">×</button>
+      `;
 
-      const leftHandle = document.createElement('div');
-      leftHandle.className = 'handle handle-left';
-      const rightHandle = document.createElement('div');
-      rightHandle.className = 'handle handle-right';
-
-      const deleteBtn = document.createElement('button');
-      deleteBtn.className = 'clip-delete';
-      deleteBtn.textContent = '×';
-      deleteBtn.addEventListener('click', () => {
+      clip.querySelector('.clip-delete').addEventListener('click', () => {
         clip.remove();
         layoutRippleTimeline();
       });
 
-      clip.appendChild(leftHandle);
-      clip.appendChild(rightHandle);
-      clip.appendChild(label);
-      clip.appendChild(deleteBtn);
       timelineTrack.appendChild(clip);
-
-      setupHandleDrag(clip, leftHandle, 'left');
-      setupHandleDrag(clip, rightHandle, 'right');
+      setupHandleDrag(clip, clip.querySelector('.handle-left'), 'left');
+      setupHandleDrag(clip, clip.querySelector('.handle-right'), 'right');
       layoutRippleTimeline();
-      updateTimelineView();
     });
   });
 
-  function setupHandleDrag(clip, handle, side) {
-    let isDragging = false;
+  // === レイアウト処理 ===
+  function layoutRippleTimeline() {
+    let offset = 0;
+    document.querySelectorAll('.timeline-clip').forEach(clip => {
+      const duration = parseFloat(clip.dataset.out) - parseFloat(clip.dataset.in);
+      const width = duration * pixelsPerSecond();
+      clip.style.left = `${offset}px`;
+      clip.style.width = `${width}px`;
+      offset += width + 4;
+    });
+  }
 
+  function updateClipWidths() {
+    document.querySelectorAll('.timeline-clip').forEach(clip => {
+      const duration = parseFloat(clip.dataset.out) - parseFloat(clip.dataset.in);
+      clip.style.width = `${duration * pixelsPerSecond()}px`;
+    });
+  }
+
+  // === ハンドル操作 ===
+  function setupHandleDrag(clip, handle, side) {
     handle.addEventListener('pointerdown', (e) => {
       if (!clip.classList.contains('selected')) return;
       e.preventDefault();
-      isDragging = true;
-
+      let isDragging = true;
       const startX = e.clientX;
       const startIn = parseFloat(clip.dataset.in);
       const startOut = parseFloat(clip.dataset.out);
       const duration = parseFloat(clip.dataset.duration);
       const pps = pixelsPerSecond();
 
-      function onPointerMove(e) {
+      const move = (e) => {
         if (!isDragging) return;
-        const deltaX = e.clientX - startX;
-        const deltaSeconds = deltaX / pps;
-
+        const delta = (e.clientX - startX) / pps;
         if (side === 'left') {
-          const newIn = Math.max(0, Math.min(startOut - 0.1, startIn + deltaSeconds));
-          clip.dataset.in = newIn.toFixed(2);
+          clip.dataset.in = Math.min(startOut - 0.1, Math.max(0, startIn + delta)).toFixed(2);
         } else {
-          const newOut = Math.min(duration, Math.max(startIn + 0.1, startOut + deltaSeconds));
-          clip.dataset.out = newOut.toFixed(2);
+          clip.dataset.out = Math.max(startIn + 0.1, Math.min(duration, startOut + delta)).toFixed(2);
         }
-
         updateClipWidths();
         layoutRippleTimeline();
-      }
+      };
 
-      function onPointerUp() {
+      const up = () => {
         isDragging = false;
-        window.removeEventListener('pointermove', onPointerMove);
-        window.removeEventListener('pointerup', onPointerUp);
-      }
+        window.removeEventListener('pointermove', move);
+        window.removeEventListener('pointerup', up);
+      };
 
-      window.addEventListener('pointermove', onPointerMove);
-      window.addEventListener('pointerup', onPointerUp);
+      window.addEventListener('pointermove', move);
+      window.addEventListener('pointerup', up);
     });
   }
 
+  // === 選択状態 ===
   document.addEventListener('click', (e) => {
-    document.querySelectorAll('.timeline-clip').forEach(el => el.classList.remove('selected'));
-    if (e.target.classList.contains('timeline-clip') || e.target.closest('.timeline-clip')) {
-      selectedClip = e.target.closest('.timeline-clip');
-      selectedClip.classList.add('selected');
+    document.querySelectorAll('.timeline-clip').forEach(c => c.classList.remove('selected'));
+    const clip = e.target.closest('.timeline-clip');
+    if (clip) {
+      clip.classList.add('selected');
+      selectedClip = clip;
     } else {
       selectedClip = null;
     }
   });
 
-  fullPreviewButton.addEventListener('click', () => {
-    const clips = document.querySelectorAll('.timeline-clip');
-    let i = 0;
-
-    function playNext() {
-      if (i >= clips.length) return;
-      const clip = clips[i];
-      const label = clip.querySelector('.clip-label').textContent;
-      const left = parseFloat(clip.style.left || '0');
-      playhead.style.left = `${left}px`;
-
-      previewVideo.src = `media/${label}`;
-      previewVideo.play();
-      previewVideo.onended = () => {
-        i++;
-        playNext();
-      };
-    }
-
-    audio.currentTime = 0;
-    audio.play();
-    playNext();
-  });
-
-  playFromStartButton?.addEventListener('click', () => {
-    const firstClip = document.querySelector('.timeline-clip');
-    if (!firstClip) return;
-    const label = firstClip.querySelector('.clip-label').textContent;
-    previewVideo.src = `media/${label}`;
-    previewVideo.play();
-    audio.currentTime = 0;
-    audio.play();
-    playhead.style.left = `${firstClip.style.left}`;
-  });
-
-  playFromHeadButton?.addEventListener('click', () => {
-    const playheadLeft = parseFloat(playhead.style.left || '0');
-    const clips = Array.from(document.querySelectorAll('.timeline-clip'));
-    const clip = clips.find(c => parseFloat(c.style.left || '0') >= playheadLeft);
-    if (!clip) return;
-    const label = clip.querySelector('.clip-label').textContent;
-    previewVideo.src = `media/${label}`;
-    previewVideo.play();
-    audio.currentTime = 0;
-    audio.play();
-    playhead.style.left = `${clip.style.left}`;
-  });
-
-  edlExportButton?.addEventListener('click', () => {
-    const edl = [];
-    const clips = document.querySelectorAll('.timeline-clip');
-    let startTime = 0;
-
-    clips.forEach((clip, i) => {
-      const fileName = clip.querySelector('.clip-label').textContent;
-      const inTime = parseFloat(clip.dataset.in).toFixed(2);
-      const outTime = parseFloat(clip.dataset.out).toFixed(2);
-      const duration = (outTime - inTime).toFixed(2);
-
-      edl.push(`001  AX       V     C        ${inTime} ${outTime} ${startTime.toFixed(2)} ${(startTime + parseFloat(duration)).toFixed(2)}\n* FROM CLIP: ${fileName}`);
-      startTime += parseFloat(duration);
-    });
-
-    const blob = new Blob([edl.join('\n')], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'edit.edl';
-    a.click();
-    URL.revokeObjectURL(url);
-  });
-
+  // === ズーム切替 ===
   zoomToggle.addEventListener('click', () => {
     isZoomed = !isZoomed;
     updateTimelineView();
+  });
+
+  // === プレイヘッドから再生 ===
+  playFromHead.addEventListener('click', () => {
+    const playheadX = parseFloat(playhead.style.left) || 0;
+    const clips = Array.from(document.querySelectorAll('.timeline-clip'));
+    const target = clips.find(clip => parseFloat(clip.style.left) >= playheadX);
+    if (!target) return;
+    const label = target.querySelector('.clip-label').textContent;
+    previewVideo.src = `media/${label}`;
+    previewVideo.currentTime = parseFloat(target.dataset.in);
+    previewVideo.play();
+    voiceover.currentTime = 0;
+    voiceover.play();
+  });
+
+  // === 最初から再生 ===
+  playFromStart.addEventListener('click', () => {
+    const first = document.querySelector('.timeline-clip');
+    if (!first) return;
+    const label = first.querySelector('.clip-label').textContent;
+    previewVideo.src = `media/${label}`;
+    previewVideo.currentTime = parseFloat(first.dataset.in);
+    previewVideo.play();
+    voiceover.currentTime = 0;
+    voiceover.play();
+  });
+
+  // === 全素材連続再生（in/out考慮） ===
+  fullPreviewButton.addEventListener('click', () => {
+    const clips = Array.from(document.querySelectorAll('.timeline-clip'));
+    let i = 0;
+
+    const playNext = () => {
+      if (i >= clips.length) return;
+      const clip = clips[i];
+      const label = clip.querySelector('.clip-label').textContent;
+      previewVideo.src = `media/${label}`;
+      previewVideo.currentTime = parseFloat(clip.dataset.in);
+      previewVideo.play();
+      playhead.style.left = clip.style.left;
+
+      previewVideo.ontimeupdate = () => {
+        if (previewVideo.currentTime >= parseFloat(clip.dataset.out)) {
+          previewVideo.pause();
+          i++;
+          playNext();
+        }
+      };
+    };
+
+    voiceover.currentTime = 0;
+    voiceover.play();
+    playNext();
+  });
+
+  // === EDL出力 ===
+  edlExport.addEventListener('click', () => {
+    const lines = [];
+    document.querySelectorAll('.timeline-clip').forEach((clip, i) => {
+      const file = clip.querySelector('.clip-label').textContent;
+      const inTime = clip.dataset.in;
+      const outTime = clip.dataset.out;
+      lines.push(`${i + 1}  AX  V  C  ${inTime} ${outTime} ${inTime} ${outTime}`);
+    });
+    const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
+    const link = document.createElement('a');
+    link.download = 'timeline.edl';
+    link.href = URL.createObjectURL(blob);
+    link.click();
   });
 
   updateTimelineView();
