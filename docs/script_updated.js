@@ -121,38 +121,48 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // === ハンドル操作 ===
   function setupHandleDrag(clip, handle, side) {
-    handle.addEventListener('pointerdown', (e) => {
-      if (!clip.classList.contains('selected')) return;
-      e.preventDefault();
-      let isDragging = true;
-      const startX = e.clientX;
-      const startIn = parseFloat(clip.dataset.in);
-      const startOut = parseFloat(clip.dataset.out);
-      const duration = parseFloat(clip.dataset.duration);
-      const pps = pixelsPerSecond();
+  let isDragging = false;
 
-      const move = (e) => {
-        if (!isDragging) return;
-        const delta = (e.clientX - startX) / pps;
-        if (side === 'left') {
-          clip.dataset.in = Math.min(startOut - 0.1, Math.max(0, startIn + delta)).toFixed(2);
-        } else {
-          clip.dataset.out = Math.max(startIn + 0.1, Math.min(duration, startOut + delta)).toFixed(2);
-        }
-        updateClipWidths();
-        layoutRippleTimeline();
-      };
+  handle.addEventListener('pointerdown', (e) => {
+    if (!clip.classList.contains('selected')) return;
+    e.preventDefault();
+    isDragging = true;
 
-      const up = () => {
-        isDragging = false;
-        window.removeEventListener('pointermove', move);
-        window.removeEventListener('pointerup', up);
-      };
+    const startX = e.clientX;
+    const startIn = parseFloat(clip.dataset.in);
+    const startOut = parseFloat(clip.dataset.out);
+    const duration = parseFloat(clip.dataset.duration);
 
-      window.addEventListener('pointermove', move);
-      window.addEventListener('pointerup', up);
-    });
-  }
+    const pps = pixelsPerSecond();
+    const sensitivity = e.pointerType === 'touch' ? 2.5 : 1.0; // ← タッチ時は感度を下げる
+
+    function onPointerMove(e) {
+      if (!isDragging) return;
+      const deltaX = e.clientX - startX;
+      const deltaSeconds = deltaX / (pps * sensitivity); // ← 感度調整
+
+      if (side === 'left') {
+        const newIn = Math.max(0, Math.min(startOut - 0.1, startIn + deltaSeconds));
+        clip.dataset.in = newIn.toFixed(2);
+      } else {
+        const newOut = Math.min(duration, Math.max(startIn + 0.1, startOut + deltaSeconds));
+        clip.dataset.out = newOut.toFixed(2);
+      }
+
+      updateClipWidths();
+      layoutRippleTimeline();
+    }
+
+    function onPointerUp() {
+      isDragging = false;
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+    }
+
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+  });
+}
 
   // === 選択状態 ===
   document.addEventListener('click', (e) => {
