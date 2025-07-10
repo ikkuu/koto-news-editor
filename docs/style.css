@@ -127,6 +127,11 @@ width: 100px;
   box-sizing: border-box;
 }
 
+.clip-track.dragover {
+  background-color: rgba(255, 255, 255, 0.2);
+  transition: background-color 0.2s ease;
+}
+
 .timeline-clip {
   position: absolute; /* これが必須 */
   top: 0;
@@ -157,6 +162,11 @@ width: 100px;
 
 .handle-right {
   right: 0;
+}
+
+.handle.dragging {
+  background-color: red !important;
+  transition: background-color 0.2s ease;
 }
 
 #playhead {

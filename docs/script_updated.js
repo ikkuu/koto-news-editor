@@ -63,42 +63,51 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // === タイムラインに追加 ===
-  timelineTrack.addEventListener('dragover', e => e.preventDefault());
-  timelineTrack.addEventListener('drop', e => {
-    e.preventDefault();
-    const file = e.dataTransfer.getData('text/plain');
-    if (!file) return;
+ timelineTrack.addEventListener('dragenter', () => {
+  timelineTrack.classList.add('dragover');
+});
 
-    const video = document.createElement('video');
-    video.src = `media/${file}`;
-    video.preload = 'metadata';
-    video.muted = true;
-    video.addEventListener('loadedmetadata', () => {
-      const duration = video.duration;
-      const clip = document.createElement('div');
-      clip.className = 'timeline-clip';
-      clip.dataset.in = 0;
-      clip.dataset.out = duration;
-      clip.dataset.duration = duration;
+timelineTrack.addEventListener('dragleave', () => {
+  timelineTrack.classList.remove('dragover');
+});
 
-      clip.innerHTML = `
-        <div class="handle handle-left"></div>
-        <div class="handle handle-right"></div>
-        <div class="clip-label">${file}</div>
-        <button class="clip-delete">×</button>
-      `;
+timelineTrack.addEventListener('drop', e => {
+  timelineTrack.classList.remove('dragover'); // ← ここに追記
+  e.preventDefault();
+  const file = e.dataTransfer.getData('text/plain');
+  if (!file) return;
 
-      clip.querySelector('.clip-delete').addEventListener('click', () => {
-        clip.remove();
-        layoutRippleTimeline();
-      });
+  const video = document.createElement('video');
+  video.src = `media/${file}`;
+  video.preload = 'metadata';
+  video.muted = true;
+  video.addEventListener('loadedmetadata', () => {
+    const duration = video.duration;
+    const clip = document.createElement('div');
+    clip.className = 'timeline-clip';
+    clip.dataset.in = 0;
+    clip.dataset.out = duration;
+    clip.dataset.duration = duration;
 
-      timelineTrack.appendChild(clip);
-      setupHandleDrag(clip, clip.querySelector('.handle-left'), 'left');
-      setupHandleDrag(clip, clip.querySelector('.handle-right'), 'right');
+    clip.innerHTML = `
+      <div class="handle handle-left"></div>
+      <div class="handle handle-right"></div>
+      <div class="clip-label">${file}</div>
+      <button class="clip-delete">×</button>
+    `;
+
+    clip.querySelector('.clip-delete').addEventListener('click', () => {
+      clip.remove();
       layoutRippleTimeline();
     });
+
+    timelineTrack.appendChild(clip);
+    setupHandleDrag(clip, clip.querySelector('.handle-left'), 'left');
+    setupHandleDrag(clip, clip.querySelector('.handle-right'), 'right');
+    layoutRippleTimeline();
   });
+});
+
 
   // === レイアウト処理 ===
   function layoutRippleTimeline() {
@@ -128,6 +137,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!clip.classList.contains('selected')) return;
     e.preventDefault();
     isDragging = true;
+ handle.classList.add('dragging');
+
 
  // スクロール無効化
     function disableScroll(e) {
@@ -172,6 +183,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function onPointerUp() {
       isDragging = false;
+ handle.classList.remove('dragging');
+
       window.removeEventListener('pointermove', onPointerMove);
       window.removeEventListener('pointerup', onPointerUp);
     
