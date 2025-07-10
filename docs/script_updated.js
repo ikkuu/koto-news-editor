@@ -163,7 +163,7 @@ timelineTrack.addEventListener('drop', e => {
       // 小さな動きは無視
       if (Math.abs(deltaX) < 2) return;
 
-      const deltaSeconds = (deltaX / pps) * 0.5;
+      const deltaSeconds = (deltaX / pps) * 0.7;
 
       if (side === 'left') {
         const newIn = Math.max(0, Math.min(startOut - 0.1, startIn + deltaSeconds));
