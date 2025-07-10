@@ -129,6 +129,13 @@ document.addEventListener('DOMContentLoaded', () => {
     e.preventDefault();
     isDragging = true;
 
+ // スクロール無効化
+    function disableScroll(e) {
+      e.preventDefault();
+    }
+    document.body.addEventListener('touchmove', disableScroll, { passive: false });
+    document.body.addEventListener('wheel', disableScroll, { passive: false });
+
     const startX = e.clientX;
     const startIn = parseFloat(clip.dataset.in);
     const startOut = parseFloat(clip.dataset.out);
@@ -169,10 +176,10 @@ document.addEventListener('DOMContentLoaded', () => {
       window.removeEventListener('pointerup', onPointerUp);
     }
 
-    window.addEventListener('pointermove', onPointerMove);
-    window.addEventListener('pointerup', onPointerUp);
-  });
-}
+    // スクロール許可
+      document.body.removeEventListener('touchmove', disableScroll, { passive: false });
+      document.body.removeEventListener('wheel', disableScroll, { passive: false });
+    }
 
 
   // === 選択状態 ===
