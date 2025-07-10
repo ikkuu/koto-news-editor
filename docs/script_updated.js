@@ -122,6 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // === ハンドル操作 ===
   function setupHandleDrag(clip, handle, side) {
   let isDragging = false;
+  let animationFrameId = null;
 
   handle.addEventListener('pointerdown', (e) => {
     if (!clip.classList.contains('selected')) return;
@@ -132,14 +133,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const startIn = parseFloat(clip.dataset.in);
     const startOut = parseFloat(clip.dataset.out);
     const duration = parseFloat(clip.dataset.duration);
-
     const pps = pixelsPerSecond();
-    const sensitivity = e.pointerType === 'touch' ? 2.5 : 1.0; // ← タッチ時は感度を下げる
 
-    function onPointerMove(e) {
-      if (!isDragging) return;
-      const deltaX = e.clientX - startX;
-      const deltaSeconds = deltaX / (pps * sensitivity); // ← 感度調整
+    function updateDrag(currentX) {
+      const deltaX = currentX - startX;
+
+      // 小さな動きは無視
+      if (Math.abs(deltaX) < 2) return;
+
+      const deltaSeconds = (deltaX / pps) * 0.5;
 
       if (side === 'left') {
         const newIn = Math.max(0, Math.min(startOut - 0.1, startIn + deltaSeconds));
@@ -153,6 +155,14 @@ document.addEventListener('DOMContentLoaded', () => {
       layoutRippleTimeline();
     }
 
+    function onPointerMove(e) {
+      if (!isDragging) return;
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+
+      const currentX = e.clientX;
+      animationFrameId = requestAnimationFrame(() => updateDrag(currentX));
+    }
+
     function onPointerUp() {
       isDragging = false;
       window.removeEventListener('pointermove', onPointerMove);
@@ -163,6 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('pointerup', onPointerUp);
   });
 }
+
 
   // === 選択状態 ===
   document.addEventListener('click', (e) => {
