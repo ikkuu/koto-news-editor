@@ -174,13 +174,17 @@ document.addEventListener('DOMContentLoaded', () => {
       isDragging = false;
       window.removeEventListener('pointermove', onPointerMove);
       window.removeEventListener('pointerup', onPointerUp);
-    }
+    
 
     // スクロール許可
       document.body.removeEventListener('touchmove', disableScroll, { passive: false });
       document.body.removeEventListener('wheel', disableScroll, { passive: false });
     }
 
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+  });
+}
 
   // === 選択状態 ===
   document.addEventListener('click', (e) => {
