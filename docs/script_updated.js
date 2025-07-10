@@ -67,6 +67,10 @@ document.addEventListener('DOMContentLoaded', () => {
   timelineTrack.classList.add('dragover');
 });
 
+timelineTrack.addEventListener('dragover', (e) => {
+  e.preventDefault();  // ← これでドロップ処理が有効になる
+});
+
 timelineTrack.addEventListener('dragleave', () => {
   timelineTrack.classList.remove('dragover');
 });
