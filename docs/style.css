@@ -505,7 +505,15 @@ button.stop:hover,
    ============================================================ */
 
 @media screen and (max-width: 768px) {
-  body { font-size: 15px; }
+  html, body {
+    height: auto;
+    min-height: 100%;
+    overflow: auto;
+  }
+  body {
+    font-size: 15px;
+    display: block;
+  }
 
   .header {
     padding: var(--gap-2) var(--gap-3);
@@ -526,19 +534,26 @@ button.stop:hover,
 
   .main-layout {
     flex-direction: column;
+    flex: 0 0 auto;
     gap: var(--gap-3);
     padding: var(--gap-3);
-    padding-bottom: 170px;
+    padding-bottom: var(--gap-3);
+    overflow: visible;
   }
 
   .media-panel {
     width: 100%;
     max-width: none;
-    max-height: 180px;
+    height: auto;
+    max-height: 240px;
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   }
 
-  .preview-panel { width: 100%; flex: 1; padding: var(--gap-3); }
+  .preview-panel {
+    width: 100%;
+    flex: none;
+    padding: var(--gap-3);
+  }
 
   .video-wrapper { aspect-ratio: 16 / 9; flex: none; }
 
@@ -551,6 +566,7 @@ button.stop:hover,
   }
 
   .editor-container {
+    position: static;
     padding: var(--gap-1) var(--gap-2) var(--gap-2);
   }
 
