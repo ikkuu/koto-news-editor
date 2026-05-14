@@ -1,0 +1,28 @@
+# 大きなメディアファイル（サンプル動画・音声・画像）
+media/
+assets/*.mp4
+assets/*.mov
+*.mov
+*.MOV
+*.mp4
+*.MP4
+
+# OSが生成するファイル
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# エディタの一時ファイル
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# ビルド成果物
+node_modules/
+dist/
+build/
+
+# その他
+*.log

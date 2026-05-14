@@ -221,78 +221,142 @@ timelineTrack.addEventListener('drop', e => {
     updateTimelineView();
   });
 
-  // === プレイヘッドから再生 ===
+  // === プレイヘッドから再生
+  //     - 動画：プレイヘッド位置のクリップを inTime からスタート
+  //     - ナレーション：タイムライン上の playhead 位置に対応する時刻からスタート
+  // =================================================================== */
   playFromHead.addEventListener('click', () => {
     const playheadX = parseFloat(playhead.style.left) || 0;
+    const pps = pixelsPerSecond();
+    const playheadTime = playheadX / pps; // タイムライン上の経過秒数
+
     const clips = Array.from(document.querySelectorAll('.timeline-clip'));
-    const target = clips.find(clip => parseFloat(clip.style.left) >= playheadX);
-    if (!target) return;
+    // playheadX 以降に始まるクリップ、または playheadX を内包するクリップを探す
+    const target = clips.find(clip => {
+      const left = parseFloat(clip.style.left) || 0;
+      const width = parseFloat(clip.style.width) || 0;
+      return left + width >= playheadX;
+    });
+    if (!target) {
+      console.warn('[kotoedit] プレイヘッド位置にクリップがありません');
+      return;
+    }
+
     const label = target.querySelector('.clip-label').textContent;
+    const inTime = parseFloat(target.dataset.in) || 0;
+    const targetLeft = parseFloat(target.style.left) || 0;
+    // プレイヘッドが対象クリップの途中にあれば、その分だけ inTime を進める
+    const insideOffset = Math.max(0, (playheadX - targetLeft) / pps);
+    const startInClip = inTime + insideOffset;
+
+    // タイムライン再生モード（ナレーション連動）
+    window.materialPreviewMode = false;
+
+    // src 切替 → metadata 読み込み完了を待ってから currentTime セット & play
     previewVideo.src = `media/${label}`;
-    previewVideo.currentTime = parseFloat(target.dataset.in);
-    previewVideo.play();
-    voiceover.currentTime = 0;
-    voiceover.play();
+    previewVideo.load();
+
+    const onMeta = () => {
+      previewVideo.removeEventListener('loadedmetadata', onMeta);
+      try { previewVideo.currentTime = startInClip; } catch (e) {}
+      const p = previewVideo.play();
+      if (p && p.catch) p.catch(() => {});
+    };
+    previewVideo.addEventListener('loadedmetadata', onMeta, { once: true });
+    if (previewVideo.readyState >= 1) onMeta();
+
+    // ナレーションはプレイヘッド位置に対応する時刻から
+    try {
+      const audioDur = isFinite(voiceover.duration) ? voiceover.duration : Infinity;
+      voiceover.currentTime = Math.min(Math.max(0, playheadTime), audioDur);
+    } catch (e) {}
+    const ap = voiceover.play();
+    if (ap && ap.catch) ap.catch(() => {});
   });
 
-  // === 最初から再生 ===
+  // === 最初から再生（タイムラインを最初から、ナレーション連動） ===
   playFromStart.addEventListener('click', () => {
-  const clips = Array.from(document.querySelectorAll('.timeline-clip'));
-  if (clips.length === 0) return;
-  let i = 0;
+    const clips = Array.from(document.querySelectorAll('.timeline-clip'));
+    if (clips.length === 0) return;
+    let i = 0;
 
-  function playNext() {
-    if (i >= clips.length) return;
-    const clip = clips[i];
-    const label = clip.querySelector('.clip-label').textContent;
-    const inTime = parseFloat(clip.dataset.in);
-    const outTime = parseFloat(clip.dataset.out);
+    window.materialPreviewMode = false;
 
-    previewVideo.src = `media/${label}`;
-    previewVideo.currentTime = inTime;
-    previewVideo.play();
-    playhead.style.left = clip.style.left;
+    function playNext() {
+      if (i >= clips.length) return;
+      const clip = clips[i];
+      const label = clip.querySelector('.clip-label').textContent;
+      const inTime = parseFloat(clip.dataset.in) || 0;
+      const outTime = parseFloat(clip.dataset.out) || 0;
 
-    previewVideo.ontimeupdate = () => {
-      if (previewVideo.currentTime >= outTime) {
-        previewVideo.pause();
+      previewVideo.src = `media/${label}`;
+      previewVideo.load();
+
+      const onMeta = () => {
+        previewVideo.removeEventListener('loadedmetadata', onMeta);
+        try { previewVideo.currentTime = inTime; } catch (e) {}
+        const p = previewVideo.play();
+        if (p && p.catch) p.catch(() => {});
+        playhead.style.left = clip.style.left;
+
+        previewVideo.ontimeupdate = () => {
+          if (previewVideo.currentTime >= outTime) {
+            previewVideo.pause();
+            i++;
+            playNext();
+          }
+        };
+      };
+      previewVideo.addEventListener('loadedmetadata', onMeta, { once: true });
+      if (previewVideo.readyState >= 1) onMeta();
+    }
+
+    voiceover.currentTime = 0;
+    const ap = voiceover.play();
+    if (ap && ap.catch) ap.catch(() => {});
+    playNext();
+  });
+
+  // === 全素材連続再生（素材パネルの素材を順に全部再生。タイムライン非依存、ナレーションなし） ===
+  fullPreviewButton.addEventListener('click', () => {
+    const items = Array.from(document.querySelectorAll('.media-item'));
+    if (items.length === 0) return;
+    let i = 0;
+
+    function getFileName(item) {
+      const img = item.querySelector('img');
+      if (img && img.alt) return img.alt;
+      const labelDiv = item.querySelector('div');
+      if (labelDiv) return labelDiv.textContent.trim();
+      return null;
+    }
+
+    function playNext() {
+      if (i >= items.length) {
+        window.materialPreviewMode = false;
+        return;
+      }
+      const item = items[i];
+      const file = getFileName(item);
+      if (!file) { i++; playNext(); return; }
+
+      previewVideo.src = `media/${file}`;
+      previewVideo.currentTime = 0;
+      const p = previewVideo.play();
+      if (p && p.catch) p.catch(() => {});
+
+      previewVideo.onended = () => {
         i++;
         playNext();
-      }
-    };
-  }
+      };
+    }
 
-  voiceover.currentTime = 0;
-  voiceover.play();
-  playNext();
-});
-
-  // === 全素材連続再生 ===
-  fullPreviewButton.addEventListener('click', () => {
-  const clips = Array.from(document.querySelectorAll('.timeline-clip'));
-  if (clips.length === 0) return;
-  let i = 0;
-
-  function playNext() {
-    if (i >= clips.length) return;
-    const clip = clips[i];
-    const label = clip.querySelector('.clip-label').textContent;
-
-    previewVideo.src = `media/${label}`;
-    previewVideo.currentTime = 0;
-    previewVideo.play();
-    playhead.style.left = clip.style.left;
-
-    previewVideo.onended = () => {
-      i++;
-      playNext();
-    };
-  }
-
-  voiceover.pause();
-  voiceover.currentTime = 0;
-  playNext();
-});
+    // 素材プレビューモードON：media-sync 側で audio を連動させないフラグ
+    window.materialPreviewMode = true;
+    voiceover.pause();
+    voiceover.currentTime = 0;
+    playNext();
+  });
 
 
   // === EDL出力 ===

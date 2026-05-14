@@ -2,46 +2,104 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <title>簡易編集ツール</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <meta name="theme-color" content="#2b6cb0" />
+  <meta name="description" content="支援団体・教育現場のための、ブラウザ完結型の簡易映像編集ツール。" />
+
+  <!-- PWA / iOS / Android 全画面ヒント -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="kotoedit" />
+
+  <!-- アイコン -->
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+
+  <title>kotoedit｜伝わる1分動画ワークショップ</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
+  <script src="ios-audio-unlock.js" defer></script>
   <script src="script_updated.js" defer></script>
   <script src="sync-player.js" defer></script>
+  <script src="playhead-drag.js" defer></script>
+
+  <!-- Service Worker 登録 -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch((e) => {
+          console.warn('SW register failed:', e);
+        });
+      });
+    }
+  </script>
 </head>
 <body>
-  <div class="header">
-    <button id="export-edl">EDL出力</button>
-   <button id="preview-play-all">全素材を連続再生</button>
-  </div>
+  <header class="header">
+    <button id="export-edl" class="primary" type="button">
+      ⤓ EDLを書き出す
+    </button>
+    <button id="preview-play-all" type="button" title="素材パネルの素材を順に全部再生します">
+      ▶ 素材を全部見る
+    </button>
+    <button id="fullscreen-toggle" type="button" title="全画面表示" aria-label="全画面表示">
+      ⛶ 全画面
+    </button>
+  </header>
 
   <div class="main-layout">
-    <div class="media-panel" id="mediaPanel"></div>
+    <aside class="media-panel" id="mediaPanel" aria-label="素材一覧"></aside>
 
-    <div class="preview-panel">
+    <section class="preview-panel" aria-label="プレビュー">
       <div class="video-wrapper">
-         <video id="preview-video" controls></video>
-        <div id="timecode-overlay"></div>
+        <video id="preview-video" playsinline webkit-playsinline disablepictureinpicture></video>
+        <div id="timecode-overlay" aria-live="polite">00:00:00</div>
       </div>
-      <audio id="voiceover-audio" src="media/silent_1min.wav"></audio>
-      <div class="playback-controls">
-  <button id="preview-from-start">▶ 最初から再生</button>
-  <button id="preview-from-playhead">▶ プレイヘッドから再生</button>
-  <button id="zoom-toggle">タイムライン拡大</button>
+      <audio id="voiceover-audio" src="media/silent_1min.wav" preload="auto" playsinline></audio>
+      <div class="playback-controls" role="toolbar" aria-label="再生コントロール">
+        <button id="preview-from-start" type="button">▶ 最初から再生</button>
+        <button id="preview-from-playhead" type="button">▶ ここから再生</button>
+        <button id="preview-stop" type="button" class="stop">⏹ 停止</button>
+        <button id="zoom-toggle" type="button">⤢ タイムライン拡大</button>
+      </div>
+    </section>
+  </div>
 
+  <div class="editor-container">
+    <div class="timeline">
+      <div id="playhead" class="playhead-line" aria-hidden="true"></div>
+      <div class="timecode-bar" id="timecode-bar"></div>
+      <div id="waveform-wrapper">
+        <img id="waveform-img" src="media/waveform.png" alt="" />
       </div>
+      <div class="clip-track" aria-label="編集タイムライン"></div>
     </div>
   </div>
 
- <div class="editor-container">
-  <!-- タイムラインおよびウェーブフォームの上に重ねる -->
-  
- <div class="timeline">
-<div id="playhead" class="playhead-line"></div>
-  <div class="timecode-bar" id="timecode-bar"></div>
-   <div id="waveform-wrapper">
-  <img id="waveform-img" src="media/waveform.png" />
-</div>
-  <div class="clip-track"></div>
-</div>
-</div>
+  <!-- 全画面トグル：Fullscreen API（ボタンから） -->
+  <script>
+    (function () {
+      const btn = document.getElementById('fullscreen-toggle');
+      if (!btn) return;
+      btn.addEventListener('click', () => {
+        const el = document.documentElement;
+        if (!document.fullscreenElement) {
+          (el.requestFullscreen || el.webkitRequestFullscreen).call(el).catch(() => {});
+        } else {
+          (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+        }
+      });
+      // 全画面状態でボタン文言を切り替え
+      document.addEventListener('fullscreenchange', () => {
+        btn.textContent = document.fullscreenElement ? '⛶ 全画面解除' : '⛶ 全画面';
+      });
+    })();
+  </script>
 </body>
 </html>

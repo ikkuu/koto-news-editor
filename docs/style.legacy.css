@@ -1,0 +1,227 @@
+body {
+  font-family: sans-serif;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  display: flex;
+  gap: 10px;
+  padding: 10px;
+  background-color: #f0f0f0;
+  flex-shrink: 0;
+}
+
+.main-layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.media-panel {
+  width: 30%;
+  height: 100%;
+  overflow-y: scroll;
+  background-color: #fafafa;
+  padding: 10px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.media-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 12px;
+  text-align: center;
+}
+
+.media-item img,
+.media-item video {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+.preview-panel {
+  width: 70%;
+  padding: 10px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.video-wrapper {
+  width: 100%;
+  max-height: 60%;
+  position: relative;
+}
+
+#preview-video {
+  width: 100%;
+  max-height: 100%;
+  background: black;
+}
+
+.controls {
+width: 100px;
+  height: 50px;
+  display: flex;
+  gap: 5px;
+  margin-top: 10px;
+}
+
+.timeline {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background-color: #f8f8f8;
+  z-index: 1000;
+  border-top: 1px solid #ccc;
+  padding: 8px 0;
+  overflow-x: auto;
+}
+
+.timecode-bar {
+  display: flex;
+  font-size: 12px;
+  margin-bottom: 5px;
+}
+
+.timecode-label {
+  text-align: center;
+  border-left: 1px solid #ccc;
+}
+
+#waveform-wrapper {
+  width: 85%;
+  overflow: hidden;
+  position: relative;
+  height: 30px; /* 表示したい高さに応じて調整 */
+}
+
+#waveform-img {
+  width: 100%; /* 横幅は親要素基準で縮小済み */
+  height: 40%; /* 表示高を抑える */
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+.clip-track {
+  position: relative;
+  height: 50px;
+  background-color: #ddd;
+  border: 2px dashed #666;  /* 👈 追加：境界線 */
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.clip-track.dragover {
+  background-color: rgba(255, 255, 255, 0.2);
+  transition: background-color 0.2s ease;
+}
+
+.timeline-clip {
+  position: absolute; /* これが必須 */
+  top: 0;
+  height: 100%;
+  background: rgba(100, 149, 237, 0.8); /* 適当な青色 */
+  border: 1px solid #888;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+.timeline-clip.selected {
+  background-color: #fff9c4; /* 薄い黄色 */
+  outline: 2px solid #fbc02d;
+}
+
+.handle {
+  width: 4px;
+  margin-left: -6px;
+  padding-left: 6px;
+  padding-right: 6px;
+  background-color: #999;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 10;
+  cursor: ew-resize;
+}
+
+.handle-left {
+  left: 0;
+}
+
+.handle-right {
+  right: 0;
+}
+
+.handle.dragging {
+  background-color: red !important;
+  transition: background-color 0.2s ease;
+}
+
+#playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: red;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.clip-track.dragover {
+  border-color: #007bff;
+  background-color: #eef6ff;
+}
+
+#waveform-img,
+.clip-track,
+#timecode-bar {
+  max-width: none;
+  min-width: 0;
+  width: auto;
+}
+@media screen and (max-width: 768px) {
+  .video-wrapper {
+    max-width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    margin-bottom: 12px;
+  }
+
+  #preview-video {
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+  }
+
+  .main-layout {
+    flex-direction: column;
+  }
+
+  .preview-panel {
+    width: 100%;
+  }
+
+  .media-panel {
+    width: 100%;
+    max-height: 150px;
+    overflow-x: scroll;
+    display: flex;
+    flex-wrap: nowrap;
+    margin-bottom: 10px;
+  }
+}

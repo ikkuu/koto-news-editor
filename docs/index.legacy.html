@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>簡易編集ツール</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="script_updated.js" defer></script>
+  <script src="sync-player.js" defer></script>
+</head>
+<body>
+  <div class="header">
+    <button id="export-edl">EDL出力</button>
+   <button id="preview-play-all">全素材を連続再生</button>
+  </div>
+
+  <div class="main-layout">
+    <div class="media-panel" id="mediaPanel"></div>
+
+    <div class="preview-panel">
+      <div class="video-wrapper">
+         <video id="preview-video" controls></video>
+        <div id="timecode-overlay"></div>
+      </div>
+      <audio id="voiceover-audio" src="media/silent_1min.wav"></audio>
+      <div class="playback-controls">
+  <button id="preview-from-start">▶ 最初から再生</button>
+  <button id="preview-from-playhead">▶ プレイヘッドから再生</button>
+  <button id="zoom-toggle">タイムライン拡大</button>
+
+      </div>
+    </div>
+  </div>
+
+ <div class="editor-container">
+  <!-- タイムラインおよびウェーブフォームの上に重ねる -->
+  
+ <div class="timeline">
+<div id="playhead" class="playhead-line"></div>
+  <div class="timecode-bar" id="timecode-bar"></div>
+   <div id="waveform-wrapper">
+  <img id="waveform-img" src="media/waveform.png" />
+</div>
+  <div class="clip-track"></div>
+</div>
+</div>
+</body>
+</html>

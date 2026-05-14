@@ -63,43 +63,50 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  function setupHandleDrag(clip, handle, side) {
-    let isDragging = false;
-    handle.addEventListener('pointerdown', (e) => {
-      if (!clip.classList.contains('selected')) return;
-      e.preventDefault();
-      isDragging = true;
-      const startX = e.clientX;
-      const startIn = parseFloat(clip.dataset.in);
-      const startOut = parseFloat(clip.dataset.out);
-      const duration = parseFloat(clip.dataset.duration);
-      const pps = pixelsPerSecond();
+function setupHandleDrag(clip, handle, side) {
+  let isDragging = false;
 
-      function onPointerMove(e) {
-        if (!isDragging) return;
-        const deltaX = e.clientX - startX;
-        const deltaSeconds = deltaX / pps;
-        if (side === 'left') {
-          const newIn = Math.max(0, Math.min(startOut - 0.1, startIn + deltaSeconds));
-          clip.dataset.in = newIn.toFixed(2);
-        } else {
-          const newOut = Math.min(duration, Math.max(startIn + 0.1, startOut + deltaSeconds));
-          clip.dataset.out = newOut.toFixed(2);
-        }
-        updateClipWidths();
-        layoutRippleTimeline();
+  handle.addEventListener('pointerdown', (e) => {
+    if (!clip.classList.contains('selected')) return;
+    e.preventDefault();
+    isDragging = true;
+
+    const startX = e.clientX;
+    const startIn = parseFloat(clip.dataset.in);
+    const startOut = parseFloat(clip.dataset.out);
+    const duration = parseFloat(clip.dataset.duration);
+
+    const pps = pixelsPerSecond();
+    const sensitivity = e.pointerType === 'touch' ? 2.5 : 1.0; // ← タッチ時は感度を下げる
+
+    function onPointerMove(e) {
+      if (!isDragging) return;
+      const deltaX = e.clientX - startX;
+      const deltaSeconds = deltaX / (pps * sensitivity); // ← 感度調整
+
+      if (side === 'left') {
+        const newIn = Math.max(0, Math.min(startOut - 0.1, startIn + deltaSeconds));
+        clip.dataset.in = newIn.toFixed(2);
+      } else {
+        const newOut = Math.min(duration, Math.max(startIn + 0.1, startOut + deltaSeconds));
+        clip.dataset.out = newOut.toFixed(2);
       }
 
-      function onPointerUp() {
-        isDragging = false;
-        window.removeEventListener('pointermove', onPointerMove);
-        window.removeEventListener('pointerup', onPointerUp);
-      }
+      updateClipWidths();
+      layoutRippleTimeline();
+    }
 
-      window.addEventListener('pointermove', onPointerMove);
-      window.addEventListener('pointerup', onPointerUp);
-    });
-  }
+    function onPointerUp() {
+      isDragging = false;
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+    }
+
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+  });
+}
+
 
   mediaFiles.forEach(file => {
     const container = document.createElement('div');

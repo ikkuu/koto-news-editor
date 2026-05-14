@@ -1,41 +1,13 @@
-document.addEventListener('DOMContentLoaded', () => {
-  const previewVideo = document.getElementById('preview-video');
-  const voiceoverAudio = document.getElementById('voiceover-audio');
-  const playFromHeadBtn = document.getElementById('preview-from-playhead');
-  const playhead = document.getElementById('playhead');
+/* ============================================================
+   sync-player.js — DISABLED
+   ------------------------------------------------------------
+   旧実装：「プレイヘッドから再生」「停止」のハンドラを担っていた。
+   現在は script_updated.js と ios-audio-unlock.js に統合済み。
+   同じボタンに二重ハンドラが登録されて挙動が乱れていたため、
+   このファイルは意図的に空にしている。
 
-  let isPlaying = false;
+   ※ ファイル自体は削除せず、Service Worker のキャッシュリストや
+     index.html の <script src="..."> 参照を壊さないために残す。
+   ============================================================ */
 
-  function playFromPlayhead() {
-    const playheadLeft = parseFloat(playhead.style.left || '0');
-    const pps = 20; // 必要に応じてズーム状態で変更
-
-    const playheadTime = playheadLeft / pps;
-
-    previewVideo.currentTime = playheadTime;
-    voiceoverAudio.currentTime = playheadTime;
-
-    previewVideo.play();
-    voiceoverAudio.play();
-    isPlaying = true;
-
-    playFromHeadBtn.innerHTML = '❚❚ プレイヘッドから再生'; // 一時停止表示
-  }
-
-  function pauseMedia() {
-    previewVideo.pause();
-    voiceoverAudio.pause();
-    isPlaying = false;
-    playFromHeadBtn.innerHTML = '▶ プレイヘッドから再生';
-  }
-
-  if (playFromHeadBtn) {
-    playFromHeadBtn.addEventListener('click', () => {
-      if (!isPlaying) {
-        playFromPlayhead();
-      } else {
-        pauseMedia();
-      }
-    });
-  }
-});
+// (intentionally empty)
