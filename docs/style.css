@@ -436,7 +436,8 @@ button.stop:hover,
 .timeline-clip .clip-delete {
   position: absolute;
   top: 2px;
-  right: 2px;
+  /* 右ハンドル（モバイル18px / PC10px）と干渉しないよう内側に逃がす */
+  right: 24px;
   width: 20px;
   height: 20px;
   min-width: 0;
@@ -479,8 +480,9 @@ button.stop:hover,
   display: none;
   touch-action: manipulation;
 }
-.timeline-clip .clip-move-left { left: 2px; }
-.timeline-clip .clip-move-right { right: 2px; }
+/* ハンドル（モバイル18px / PC10px）と干渉しないよう内側に逃がす */
+.timeline-clip .clip-move-left { left: 24px; }
+.timeline-clip .clip-move-right { right: 24px; }
 .timeline-clip.selected .clip-move { display: block; }
 .timeline-clip .clip-move:hover { background: var(--primary); box-shadow: none; }
 
