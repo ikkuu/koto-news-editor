@@ -28,5 +28,9 @@ node_modules/
 dist/
 build/
 
+# ワークショップ提出データ（参加者の個人情報を含むのでgit管理しない）
+data/
+
 # その他
 *.log
+__pycache__/

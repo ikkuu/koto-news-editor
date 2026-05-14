@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>kotoedit ダッシュボード</title>
+<style>
+  :root {
+    --bg: #ecebe6;
+    --surface: #fff;
+    --border: #d8d5cd;
+    --ink: #1f1d1a;
+    --muted: #8a857d;
+    --primary: #2b6cb0;
+    --accent: #c2410c;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 24px;
+    font-family: "Noto Sans JP", "Yu Gothic", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+  }
+  h1 { font-size: 22px; margin: 0 0 8px; }
+  .meta { color: var(--muted); font-size: 13px; margin-bottom: 16px; }
+  .controls {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  button, select {
+    font: inherit;
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    cursor: pointer;
+  }
+  button:hover { border-color: var(--primary); }
+
+  .summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+  }
+  .stat-label { font-size: 11px; color: var(--muted); }
+  .stat-value { font-size: 22px; font-weight: 700; }
+
+  .participants {
+    display: grid;
+    gap: 12px;
+  }
+  .participant {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+  }
+  .p-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .p-name { font-weight: 700; font-size: 16px; }
+  .p-count { color: var(--muted); font-size: 12px; }
+
+  .timeline {
+    background: #f7f6f2;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px;
+    position: relative;
+    height: 36px;
+    overflow: hidden;
+  }
+  .timeline-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 8px;
+    align-items: center;
+  }
+  .timeline-label {
+    font-size: 11px;
+    color: var(--muted);
+    min-width: 90px;
+    white-space: nowrap;
+  }
+  .timeline-wrap {
+    flex: 1;
+    position: relative;
+    background: #f0eee8;
+    border-radius: 6px;
+    height: 28px;
+    overflow: hidden;
+  }
+  .clip {
+    position: absolute;
+    top: 2px;
+    bottom: 2px;
+    background: var(--primary);
+    border-radius: 4px;
+    color: #fff;
+    font-size: 10px;
+    line-height: 1;
+    padding: 4px 6px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .empty {
+    text-align: center;
+    color: var(--muted);
+    padding: 60px 0;
+  }
+</style>
+</head>
+<body>
+
+<h1>kotoedit ワークショップ ダッシュボード</h1>
+<div class="meta" id="meta">読み込み中…</div>
+
+<div class="controls">
+  <button id="refresh">🔄 更新</button>
+  <button id="export">⤓ JSONダウンロード（全提出）</button>
+  <select id="date-filter">
+    <option value="">全期間</option>
+  </select>
+</div>
+
+<div class="summary" id="summary"></div>
+<div class="participants" id="participants"></div>
+
+<script>
+const refreshBtn = document.getElementById('refresh');
+const exportBtn = document.getElementById('export');
+const metaEl = document.getElementById('meta');
+const summaryEl = document.getElementById('summary');
+const participantsEl = document.getElementById('participants');
+const dateFilter = document.getElementById('date-filter');
+
+let allData = [];
+const TIMELINE_SECONDS = 47;
+
+async function load() {
+  metaEl.textContent = '読み込み中…';
+  try {
+    const r = await fetch('/api/submissions');
+    allData = await r.json();
+  } catch (e) {
+    metaEl.textContent = `読み込み失敗: ${e}`;
+    return;
+  }
+  populateDateFilter();
+  render();
+}
+
+function populateDateFilter() {
+  const dates = [...new Set(allData.map(d => d._date))].sort().reverse();
+  const cur = dateFilter.value;
+  dateFilter.innerHTML = '<option value="">全期間</option>';
+  for (const d of dates) {
+    const opt = document.createElement('option');
+    opt.value = d;
+    opt.textContent = d;
+    dateFilter.appendChild(opt);
+  }
+  if (cur && dates.includes(cur)) dateFilter.value = cur;
+}
+
+function render() {
+  const filterDate = dateFilter.value;
+  const data = filterDate ? allData.filter(d => d._date === filterDate) : allData;
+
+  metaEl.textContent = `${data.length} 件の提出 / 最終更新: ${new Date().toLocaleString()}`;
+
+  const byName = new Map();
+  for (const rec of data) {
+    if (!byName.has(rec.name)) byName.set(rec.name, []);
+    byName.get(rec.name).push(rec);
+  }
+  for (const list of byName.values()) {
+    list.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+  }
+
+  const participants = byName.size;
+  const submissions = data.length;
+  const avgClips = data.length
+    ? (data.reduce((s, r) => s + (r.clips?.length || 0), 0) / data.length).toFixed(1)
+    : '—';
+
+  summaryEl.innerHTML = `
+    <div class="stat"><div class="stat-label">参加者数</div><div class="stat-value">${participants}</div></div>
+    <div class="stat"><div class="stat-label">提出総数</div><div class="stat-value">${submissions}</div></div>
+    <div class="stat"><div class="stat-label">平均クリップ数</div><div class="stat-value">${avgClips}</div></div>
+  `;
+
+  if (byName.size === 0) {
+    participantsEl.innerHTML = '<div class="empty">まだ提出がありません</div>';
+    return;
+  }
+
+  participantsEl.innerHTML = '';
+  for (const [name, subs] of [...byName.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
+    const wrap = document.createElement('div');
+    wrap.className = 'participant';
+
+    const head = document.createElement('div');
+    head.className = 'p-head';
+    head.innerHTML = `
+      <div class="p-name">${escapeHtml(name)}</div>
+      <div class="p-count">${subs.length} 回提出</div>
+    `;
+    wrap.appendChild(head);
+
+    for (let i = 0; i < subs.length; i++) {
+      const s = subs[i];
+      const row = document.createElement('div');
+      row.className = 'timeline-row';
+      const time = s.timestamp.substring(11, 19);
+      const totalDur = (s.clips || []).reduce((sum, c) => sum + ((c.out || 0) - (c.in || 0)), 0);
+      row.innerHTML = `
+        <div class="timeline-label">#${i + 1} ${time}<br><span style="color:#888">${totalDur.toFixed(1)}s</span></div>
+      `;
+      const tlWrap = document.createElement('div');
+      tlWrap.className = 'timeline-wrap';
+      renderTimeline(tlWrap, s.clips || []);
+      row.appendChild(tlWrap);
+      wrap.appendChild(row);
+    }
+
+    participantsEl.appendChild(wrap);
+  }
+}
+
+function renderTimeline(container, clips) {
+  let offset = 0;
+  for (const c of clips) {
+    const duration = (c.out || 0) - (c.in || 0);
+    const left = (offset / TIMELINE_SECONDS) * 100;
+    const width = (duration / TIMELINE_SECONDS) * 100;
+    const el = document.createElement('div');
+    el.className = 'clip';
+    el.style.left = `${left}%`;
+    el.style.width = `${width}%`;
+    el.textContent = c.file || '';
+    el.title = `${c.file}  in:${(c.in || 0).toFixed(2)}s  out:${(c.out || 0).toFixed(2)}s`;
+    container.appendChild(el);
+    offset += duration;
+  }
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, ch => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[ch]));
+}
+
+refreshBtn.addEventListener('click', load);
+dateFilter.addEventListener('change', render);
+exportBtn.addEventListener('click', () => {
+  const blob = new Blob([JSON.stringify(allData, null, 2)], { type: 'application/json' });
+  const link = document.createElement('a');
+  link.download = `kotoedit_submissions_${new Date().toISOString().substring(0, 10)}.json`;
+  link.href = URL.createObjectURL(blob);
+  link.click();
+});
+
+load();
+// 30秒ごとに自動更新
+setInterval(load, 30000);
+</script>
+</body>
+</html>

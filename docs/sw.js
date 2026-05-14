@@ -7,7 +7,7 @@
    - メディア素材（mp4/mov等）はキャッシュしない（容量大のため）
    ============================================================ */
 
-const CACHE_VERSION = 'kotoedit-v14';
+const CACHE_VERSION = 'kotoedit-v15';
 const CACHE_NAME = `${CACHE_VERSION}`;
 
 const PRECACHE_URLS = [

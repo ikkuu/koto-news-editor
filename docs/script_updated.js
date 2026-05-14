@@ -420,6 +420,75 @@ timelineTrack.addEventListener('drop', e => {
     link.click();
   });
 
+  // === 講師PCへの送信（ワークショップサーバー稼働時のみ） ===
+  function collectClipsAsJson() {
+    return Array.from(document.querySelectorAll('.timeline-clip')).map(clip => ({
+      file: clip.querySelector('.clip-label').textContent,
+      in: parseFloat(clip.dataset.in) || 0,
+      out: parseFloat(clip.dataset.out) || 0,
+      duration: parseFloat(clip.dataset.duration) || 0,
+    }));
+  }
+
+  function getParticipantName() {
+    let name = localStorage.getItem('kotoedit_participant_name');
+    if (!name) {
+      name = prompt('お名前を入力してください（提出に使います）');
+      if (!name || !name.trim()) return null;
+      name = name.trim();
+      localStorage.setItem('kotoedit_participant_name', name);
+    }
+    return name;
+  }
+
+  function showToast(message, isError = false) {
+    let toast = document.getElementById('kotoedit-toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'kotoedit-toast';
+      toast.style.cssText = `
+        position: fixed; left: 50%; bottom: 80px; transform: translateX(-50%);
+        background: rgba(0,0,0,0.85); color: #fff; padding: 12px 20px;
+        border-radius: 8px; font-size: 14px; z-index: 10000;
+        max-width: 80%; text-align: center; transition: opacity 0.3s;
+      `;
+      document.body.appendChild(toast);
+    }
+    toast.textContent = message;
+    toast.style.background = isError ? 'rgba(185,28,28,0.92)' : 'rgba(0,0,0,0.85)';
+    toast.style.opacity = '1';
+    setTimeout(() => { toast.style.opacity = '0'; }, 3000);
+  }
+
+  const submitBtn = document.getElementById('submit-edl');
+  if (submitBtn) {
+    submitBtn.addEventListener('click', async () => {
+      const clips = collectClipsAsJson();
+      if (clips.length === 0) {
+        showToast('タイムラインが空です', true);
+        return;
+      }
+      const name = getParticipantName();
+      if (!name) return;
+      submitBtn.disabled = true;
+      try {
+        const r = await fetch('/api/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, clips }),
+        });
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const result = await r.json();
+        if (result.error) throw new Error(result.error);
+        showToast(`送信しました（${name}）`);
+      } catch (e) {
+        showToast(`送信失敗: ${e.message}（ワークショップサーバーに接続できません）`, true);
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+  }
+
   // === モニター上のタイムコード表示（ナレーション再生時間に追従） ===
   const timecodeOverlay = document.getElementById('timecode-overlay');
   const TC_FPS = 30;
