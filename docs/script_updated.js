@@ -76,10 +76,20 @@ timelineTrack.addEventListener('dragleave', () => {
 });
 
 timelineTrack.addEventListener('drop', e => {
-  timelineTrack.classList.remove('dragover'); // ← ここに追記
+  timelineTrack.classList.remove('dragover');
   e.preventDefault();
   const file = e.dataTransfer.getData('text/plain');
   if (!file) return;
+
+  // ドロップ位置（タイムライン基準のX座標）から挿入先を決定
+  const trackRect = timelineTrack.getBoundingClientRect();
+  const dropX = e.clientX - trackRect.left;
+  const existing = Array.from(timelineTrack.querySelectorAll('.timeline-clip'));
+  const targetSibling = existing.find(c => {
+    const left = parseFloat(c.style.left) || 0;
+    const width = parseFloat(c.style.width) || 0;
+    return dropX < (left + width / 2);
+  }) || null;
 
   const video = document.createElement('video');
   video.src = `media/${file}`;
@@ -97,15 +107,40 @@ timelineTrack.addEventListener('drop', e => {
       <div class="handle handle-left"></div>
       <div class="handle handle-right"></div>
       <div class="clip-label">${file}</div>
+      <button class="clip-move clip-move-left" aria-label="左へ移動">‹</button>
+      <button class="clip-move clip-move-right" aria-label="右へ移動">›</button>
       <button class="clip-delete">×</button>
     `;
 
-    clip.querySelector('.clip-delete').addEventListener('click', () => {
+    clip.querySelector('.clip-delete').addEventListener('click', (ev) => {
+      ev.stopPropagation();
       clip.remove();
       layoutRippleTimeline();
     });
 
-    timelineTrack.appendChild(clip);
+    clip.querySelector('.clip-move-left').addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      const prev = clip.previousElementSibling;
+      if (prev && prev.classList.contains('timeline-clip')) {
+        timelineTrack.insertBefore(clip, prev);
+        layoutRippleTimeline();
+      }
+    });
+
+    clip.querySelector('.clip-move-right').addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      const next = clip.nextElementSibling;
+      if (next && next.classList.contains('timeline-clip')) {
+        timelineTrack.insertBefore(next, clip);
+        layoutRippleTimeline();
+      }
+    });
+
+    if (targetSibling) {
+      timelineTrack.insertBefore(clip, targetSibling);
+    } else {
+      timelineTrack.appendChild(clip);
+    }
     setupHandleDrag(clip, clip.querySelector('.handle-left'), 'left');
     setupHandleDrag(clip, clip.querySelector('.handle-right'), 'right');
     layoutRippleTimeline();
@@ -140,11 +175,14 @@ timelineTrack.addEventListener('drop', e => {
   handle.addEventListener('pointerdown', (e) => {
     if (!clip.classList.contains('selected')) return;
     e.preventDefault();
+    e.stopPropagation();
     isDragging = true;
- handle.classList.add('dragging');
+    handle.classList.add('dragging');
 
+    // ポインタを handle に固定（タイムラインの横スクロールを抑止）
+    try { handle.setPointerCapture(e.pointerId); } catch (_) {}
 
- // スクロール無効化
+    // スクロール無効化（フォールバック）
     function disableScroll(e) {
       e.preventDefault();
     }

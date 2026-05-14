@@ -458,6 +458,32 @@ button.stop:hover,
   box-shadow: none;
 }
 
+/* 並び替えボタン（選択時のみ表示） */
+.timeline-clip .clip-move {
+  position: absolute;
+  bottom: 2px;
+  width: 22px;
+  height: 22px;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  background: rgba(0, 0, 0, 0.45);
+  border: none;
+  color: #ffffff;
+  font-size: 16px;
+  line-height: 1;
+  border-radius: 11px;
+  cursor: pointer;
+  box-shadow: none;
+  z-index: 12;
+  display: none;
+  touch-action: manipulation;
+}
+.timeline-clip .clip-move-left { left: 2px; }
+.timeline-clip .clip-move-right { right: 2px; }
+.timeline-clip.selected .clip-move { display: block; }
+.timeline-clip .clip-move:hover { background: var(--primary); box-shadow: none; }
+
 /* リサイズハンドル */
 .handle {
   width: 10px;
@@ -469,6 +495,12 @@ button.stop:hover,
   cursor: ew-resize;
   border-radius: 2px;
   transition: background 0.15s ease;
+  touch-action: none;
+}
+
+/* スマホでハンドルを掴みやすく拡張 */
+@media (hover: none) and (pointer: coarse) {
+  .handle { width: 18px; }
 }
 
 .handle:hover { background: rgba(255, 255, 255, 0.7); }
