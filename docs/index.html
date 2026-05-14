@@ -58,7 +58,9 @@
 
     <section class="preview-panel" aria-label="プレビュー">
       <div class="video-wrapper">
-        <video id="preview-video" playsinline webkit-playsinline disablepictureinpicture></video>
+        <!-- preview-video は muted。iOSでナレーション(voiceover-audio)とオーディオセッションが競合して
+             ナレーションが切れる現象を避けるため、クリップ音声は鳴らさない。 -->
+        <video id="preview-video" playsinline webkit-playsinline disablepictureinpicture muted></video>
         <div id="timecode-overlay" aria-live="polite">00:00:00</div>
       </div>
       <!-- ナレーション音声：iOSのサイレントスイッチを回避するため <video> で実装。
