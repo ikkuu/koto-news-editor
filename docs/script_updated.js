@@ -375,5 +375,47 @@ timelineTrack.addEventListener('drop', e => {
     link.click();
   });
 
+  // === モニター上のタイムコード表示（ナレーション再生時間に追従） ===
+  const timecodeOverlay = document.getElementById('timecode-overlay');
+  const TC_FPS = 30;
+  function formatTimecode(seconds) {
+    if (!isFinite(seconds) || seconds < 0) seconds = 0;
+    const totalFrames = Math.floor(seconds * TC_FPS);
+    const f = totalFrames % TC_FPS;
+    const totalSec = Math.floor(totalFrames / TC_FPS);
+    const s = totalSec % 60;
+    const m = Math.floor(totalSec / 60);
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${pad(m)}:${pad(s)}:${pad(f)}`;
+  }
+  function updateTimecode() {
+    if (timecodeOverlay) {
+      timecodeOverlay.textContent = formatTimecode(voiceover.currentTime);
+    }
+  }
+  let tcRafId = null;
+  function tickTimecode() {
+    updateTimecode();
+    if (!voiceover.paused && !voiceover.ended) {
+      tcRafId = requestAnimationFrame(tickTimecode);
+    } else {
+      tcRafId = null;
+    }
+  }
+  voiceover.addEventListener('play', () => {
+    if (tcRafId === null) tickTimecode();
+  });
+  voiceover.addEventListener('pause', () => {
+    if (tcRafId !== null) { cancelAnimationFrame(tcRafId); tcRafId = null; }
+    updateTimecode();
+  });
+  voiceover.addEventListener('ended', () => {
+    if (tcRafId !== null) { cancelAnimationFrame(tcRafId); tcRafId = null; }
+    updateTimecode();
+  });
+  voiceover.addEventListener('seeked', updateTimecode);
+  voiceover.addEventListener('loadedmetadata', updateTimecode);
+  updateTimecode();
+
   updateTimelineView();
 });
