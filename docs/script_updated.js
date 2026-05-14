@@ -24,10 +24,14 @@ document.addEventListener('DOMContentLoaded', () => {
     return isZoomed ? 100 : 20;
   }
 
+  const waveformWrapper = document.getElementById('waveform-wrapper');
+
   function updateTimelineView() {
     const pps = pixelsPerSecond();
     const width = pps * TIMELINE_SECONDS;
-    [timelineTrack, waveformImg, timecodeBar].forEach(el => el.style.width = `${width}px`);
+    [timelineTrack, waveformImg, waveformWrapper, timecodeBar].forEach(el => {
+      if (el) el.style.width = `${width}px`;
+    });
     renderTimecodeBar(TIMELINE_SECONDS, pps);
     updateClipWidths();
   }

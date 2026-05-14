@@ -61,8 +61,14 @@
         <video id="preview-video" playsinline webkit-playsinline disablepictureinpicture></video>
         <div id="timecode-overlay" aria-live="polite">00:00:00</div>
       </div>
-      <!-- ナレーション音声：iOSのサイレントスイッチを回避するため <video> で実装（音声のみ、非表示） -->
-      <video id="voiceover-audio" src="media/narration.wav" preload="auto" playsinline webkit-playsinline style="display:none;width:0;height:0;"></video>
+      <!-- ナレーション音声：iOSのサイレントスイッチを回避するため <video> で実装。
+           display:none は iOS Safari で再生が切れることがあるため、画面外配置にしてレンダリング状態を保持。
+           wavはiOS Safariの video 要素では再生不安定のため AAC(m4a) を使用 -->
+      <video id="voiceover-audio" preload="auto" playsinline webkit-playsinline
+             style="position:absolute;left:-9999px;top:0;width:1px;height:1px;opacity:0;pointer-events:none;">
+        <source src="media/narration.m4a" type="audio/mp4">
+        <source src="media/narration.wav" type="audio/wav">
+      </video>
       <div class="playback-controls" role="toolbar" aria-label="再生コントロール">
         <button id="preview-from-start" type="button">▶ 最初から再生</button>
         <button id="preview-from-playhead" type="button">▶ ここから再生</button>
