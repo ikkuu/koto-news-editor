@@ -61,7 +61,8 @@
         <video id="preview-video" playsinline webkit-playsinline disablepictureinpicture></video>
         <div id="timecode-overlay" aria-live="polite">00:00:00</div>
       </div>
-      <audio id="voiceover-audio" src="media/silent_1min.wav" preload="auto" playsinline></audio>
+      <!-- ナレーション音声：iOSのサイレントスイッチを回避するため <video> で実装（音声のみ、非表示） -->
+      <video id="voiceover-audio" src="media/narration.wav" preload="auto" playsinline webkit-playsinline style="display:none;width:0;height:0;"></video>
       <div class="playback-controls" role="toolbar" aria-label="再生コントロール">
         <button id="preview-from-start" type="button">▶ 最初から再生</button>
         <button id="preview-from-playhead" type="button">▶ ここから再生</button>

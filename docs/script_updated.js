@@ -16,6 +16,9 @@ document.addEventListener('DOMContentLoaded', () => {
   let isZoomed = false;
   let selectedClip = null;
 
+  // タイムライン総尺（秒）。ナレーションwavの長さに合わせる。
+  const TIMELINE_SECONDS = 47;
+
   // === UIスケール関連 ===
   function pixelsPerSecond() {
     return isZoomed ? 100 : 20;
@@ -23,9 +26,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function updateTimelineView() {
     const pps = pixelsPerSecond();
-    const width = pps * 44;
+    const width = pps * TIMELINE_SECONDS;
     [timelineTrack, waveformImg, timecodeBar].forEach(el => el.style.width = `${width}px`);
-    renderTimecodeBar(44, pps);
+    renderTimecodeBar(TIMELINE_SECONDS, pps);
     updateClipWidths();
   }
 

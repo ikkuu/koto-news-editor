@@ -1,5 +1,9 @@
-# 大きなメディアファイル（サンプル動画・音声・画像）
-media/
+# 大きなメディアファイル（動画）はgit対象外。ナレーション等のwav/mp3は追跡する。
+media/*.mp4
+media/*.MP4
+media/*.mov
+media/*.MOV
+media/*.webm
 assets/*.mp4
 assets/*.mov
 *.mov

@@ -22,9 +22,16 @@
       return;
     }
 
+    /* スマホ判定（タッチ環境ならヒット領域を拡張） */
+    const isTouch = matchMedia('(hover: none) and (pointer: coarse)').matches;
+    const hitW = isTouch ? 36 : 22;
+    const headW = isTouch ? 28 : 18;
+    const headH = isTouch ? 22 : 14;
+
     /* プレイヘッドを操作可能にする：見た目とポインタ */
     playhead.style.pointerEvents = 'auto';
     playhead.style.cursor = 'ew-resize';
+    playhead.style.touchAction = 'none';
 
     /* つかみ領域を広げるための透明な hit area を生成 */
     const hitArea = document.createElement('div');
@@ -33,11 +40,12 @@
       position: absolute;
       top: 0;
       bottom: 0;
-      left: -10px;
-      width: 22px;
+      left: ${-Math.floor(hitW / 2)}px;
+      width: ${hitW}px;
       cursor: ew-resize;
       z-index: 21;
       background: transparent;
+      touch-action: none;
     `;
     playhead.appendChild(hitArea);
 
@@ -47,12 +55,13 @@
     headGrab.style.cssText = `
       position: absolute;
       top: -4px;
-      left: -8px;
-      width: 18px;
-      height: 14px;
+      left: ${-Math.floor(headW / 2)}px;
+      width: ${headW}px;
+      height: ${headH}px;
       cursor: ew-resize;
       z-index: 22;
       background: transparent;
+      touch-action: none;
     `;
     playhead.appendChild(headGrab);
 
@@ -69,10 +78,12 @@
     function onPointerDown(e) {
       dragging = true;
       e.preventDefault();
-      try { hitArea.setPointerCapture && hitArea.setPointerCapture(e.pointerId); } catch (_) {}
+      e.stopPropagation();
+      // ポインタを掴んだ要素に固定（タイムラインの横スクロールを抑止）
+      try { e.currentTarget.setPointerCapture && e.currentTarget.setPointerCapture(e.pointerId); } catch (_) {}
       // 即座に位置反映（タップで「ここに移動」も同時に実現）
       setPlayheadAtClientX(e.clientX);
-      // タッチスクロール抑制
+      // タッチスクロール抑制（フォールバック）
       document.body.style.touchAction = 'none';
     }
 
