@@ -1,0 +1,157 @@
+{
+  "updated": "2026-05-16",
+  "sections": [
+    {
+      "id": "today",
+      "title": "🔥 今日の最優先",
+      "items": [
+        {
+          "id": "jfc-form-submit",
+          "text": "5/18(月)朝 公庫面談の予約フォーム送信",
+          "note": "大阪支店宛、第1〜3希望日時を埋めて送信",
+          "tag": "jfc"
+        },
+        {
+          "id": "jfc-docs-print",
+          "text": "面談用の書類セット印刷・クリアファイル整理",
+          "note": "創業計画書v2 / 月別収支 / 企業概要書 / 借入詳細 + 確定申告3期分 + 通帳写し + 本人確認 + 印鑑",
+          "tag": "jfc"
+        }
+      ]
+    },
+    {
+      "id": "week",
+      "title": "📅 今週中",
+      "items": [
+        {
+          "id": "jfc-qa-memo",
+          "text": "面談で聞かれそうな質問の想定回答メモ",
+          "note": "「なぜ今この事業？」「最初の見込み客は？」「計画通り行かなかった場合」",
+          "tag": "jfc"
+        },
+        {
+          "id": "kawaguchi-clinic",
+          "text": "5/20(水)12:30 川口クリニック予約",
+          "tag": "misc"
+        },
+        {
+          "id": "dailylog-apppass",
+          "text": "DailyLog: Gmailアプリパスワード発行 → config.json 更新",
+          "tag": "misc"
+        },
+        {
+          "id": "dailylog-scheduler",
+          "text": "DailyLog: Task Scheduler 登録（毎朝6時起動）",
+          "tag": "misc"
+        },
+        {
+          "id": "mariwo-message",
+          "text": "マリヲさん宛 メール／LINE 整理稿を送信",
+          "tag": "doc"
+        }
+      ]
+    },
+    {
+      "id": "doc",
+      "title": "🎬 コンクリート、中性になる",
+      "items": [
+        {
+          "id": "doc-price",
+          "text": "配信価格戦略の決定（階段モデル or 単発単価）→ 創業計画書反映",
+          "tag": "doc"
+        },
+        {
+          "id": "doc-photos",
+          "text": "サイトの実写素材（ミキサー車 / 砂利 / 工場）の差し替え検討",
+          "tag": "doc"
+        },
+        {
+          "id": "doc-cm",
+          "text": "15秒CM動画イメージ案のレビュー → 着手判断",
+          "tag": "doc"
+        },
+        {
+          "id": "doc-interviews",
+          "text": "取材先候補のアプローチ整理（関生・KURS含む）",
+          "tag": "doc"
+        }
+      ]
+    },
+    {
+      "id": "oca",
+      "title": "🎓 OCA講義",
+      "items": [
+        {
+          "id": "oca-5th",
+          "text": "5/21(木) 第5回授業の準備",
+          "tag": "oca"
+        },
+        {
+          "id": "oca-makeup",
+          "text": "9/17(木) 補講(3〜6限/302A教室) 内容組み立て",
+          "tag": "oca"
+        },
+        {
+          "id": "oca-report-template",
+          "text": "授業報告書テンプレートの更新（CC先追加版で整える）",
+          "tag": "oca"
+        }
+      ]
+    },
+    {
+      "id": "ws",
+      "title": "💼 ワークショップ事業",
+      "items": [
+        {
+          "id": "ws-brochure",
+          "text": "配布資料 v1 のレビュー＆修正反映",
+          "tag": "ws"
+        },
+        {
+          "id": "ws-slides",
+          "text": "プレゼンスライドの言い回し最終確認",
+          "tag": "ws"
+        },
+        {
+          "id": "ws-sales-list",
+          "text": "就労移行支援事業所への営業先リストアップ",
+          "tag": "ws"
+        },
+        {
+          "id": "ws-photos",
+          "text": "講師写真 / メインビジュアル写真の差し替え",
+          "tag": "ws"
+        }
+      ]
+    },
+    {
+      "id": "koto",
+      "title": "🛠 kotoedit / 周辺ツール",
+      "items": [
+        {
+          "id": "koto-phase2",
+          "text": "フェーズ2: Before/After diff + 統計表示",
+          "tag": "koto"
+        },
+        {
+          "id": "koto-oca-edl",
+          "text": "OCA向け：EDLインポート + 素材ヒートマップ",
+          "tag": "koto"
+        },
+        {
+          "id": "koto-voicelib",
+          "text": "ボイスライブラリ機能（複数話者をTTSで作成・選択）",
+          "tag": "koto"
+        }
+      ]
+    }
+  ],
+  "tagLabels": {
+    "doc": "D",
+    "oca": "OCA",
+    "jfc": "公庫",
+    "ws": "WS",
+    "koto": "koto",
+    "misc": "他"
+  }
+}

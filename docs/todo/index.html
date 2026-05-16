@@ -117,6 +117,8 @@ ul.todo li.done .body { color: var(--done); text-decoration: line-through; text-
 .tag.misc { background: var(--misc); }
 .note { font-size: 12px; color: var(--muted); margin-top: 3px; }
 
+.loading { padding: 24px 0; text-align: center; color: var(--muted); }
+
 footer {
   padding: 24px 0 0;
   font-size: 11px;
@@ -141,71 +143,12 @@ footer .reset {
   <header>
     <div class="title">佐々木's To-Do</div>
     <div class="subtitle">tap to check / hold to keep</div>
-    <div class="updated" id="updated">最終更新: 2026-05-16</div>
+    <div class="updated" id="updated">読み込み中...</div>
   </header>
 
-  <!-- 🔥 今日の最優先 -->
-  <section>
-    <h2>🔥 今日の最優先 <span class="count" id="count-today">0</span></h2>
-    <ul class="todo" data-section="today">
-      <li><span class="check"></span><div class="body"><span class="tag jfc">公庫</span>5/18(月)朝 公庫面談の予約フォーム送信<div class="note">大阪支店宛、第1〜3希望日時を埋めて送信</div></div></li>
-      <li><span class="check"></span><div class="body"><span class="tag jfc">公庫</span>面談用の書類セット印刷・クリアファイル整理<div class="note">創業計画書v2 / 月別収支 / 企業概要書 / 借入詳細 + 確定申告3期分 + 通帳写し + 本人確認 + 印鑑</div></div></li>
-    </ul>
-  </section>
-
-  <!-- 📅 今週中 -->
-  <section>
-    <h2>📅 今週中 <span class="count" id="count-week">0</span></h2>
-    <ul class="todo" data-section="week">
-      <li><span class="check"></span><div class="body"><span class="tag jfc">公庫</span>面談で聞かれそうな質問の想定回答メモ<div class="note">「なぜ今この事業？」「最初の見込み客は？」「計画通り行かなかった場合」</div></div></li>
-      <li><span class="check"></span><div class="body"><span class="tag misc">他</span>5/20(水)12:30 川口クリニック予約</div></li>
-      <li><span class="check"></span><div class="body"><span class="tag misc">他</span>DailyLog: Gmailアプリパスワード発行 → config.json 更新</div></li>
-      <li><span class="check"></span><div class="body"><span class="tag misc">他</span>DailyLog: Task Scheduler 登録（毎朝6時起動）</div></li>
-      <li><span class="check"></span><div class="body"><span class="tag doc">D</span>マリヲさん宛 メール／LINE 整理稿を送信</div></li>
-    </ul>
-  </section>
-
-  <!-- 🎬 コンクリート、中性になる -->
-  <section>
-    <h2>🎬 コンクリート、中性になる <span class="count" id="count-doc">0</span></h2>
-    <ul class="todo" data-section="doc">
-      <li><span class="check"></span><div class="body">配信価格戦略の決定（階段モデル or 単発単価）→ 創業計画書反映</div></li>
-      <li><span class="check"></span><div class="body">サイトの実写素材（ミキサー車 / 砂利 / 工場）の差し替え検討</div></li>
-      <li><span class="check"></span><div class="body">15秒CM動画イメージ案のレビュー → 着手判断</div></li>
-      <li><span class="check"></span><div class="body">取材先候補のアプローチ整理（関生・KURS含む）</div></li>
-    </ul>
-  </section>
-
-  <!-- 🎓 OCA講義 -->
-  <section>
-    <h2>🎓 OCA講義 <span class="count" id="count-oca">0</span></h2>
-    <ul class="todo" data-section="oca">
-      <li><span class="check"></span><div class="body">5/21(木) 第5回授業の準備</div></li>
-      <li><span class="check"></span><div class="body">9/17(木) 補講(3〜6限/302A教室) 内容組み立て</div></li>
-      <li><span class="check"></span><div class="body">授業報告書テンプレートの更新（CC先追加版で整える）</div></li>
-    </ul>
-  </section>
-
-  <!-- 💼 ワークショップ事業 -->
-  <section>
-    <h2>💼 ワークショップ事業 <span class="count" id="count-ws">0</span></h2>
-    <ul class="todo" data-section="ws">
-      <li><span class="check"></span><div class="body">配布資料 v1 のレビュー＆修正反映</div></li>
-      <li><span class="check"></span><div class="body">プレゼンスライドの言い回し最終確認</div></li>
-      <li><span class="check"></span><div class="body">就労移行支援事業所への営業先リストアップ</div></li>
-      <li><span class="check"></span><div class="body">講師写真 / メインビジュアル写真の差し替え</div></li>
-    </ul>
-  </section>
-
-  <!-- 🛠 kotoedit / 周辺ツール -->
-  <section>
-    <h2>🛠 kotoedit / 周辺ツール <span class="count" id="count-koto">0</span></h2>
-    <ul class="todo" data-section="koto">
-      <li><span class="check"></span><div class="body">フェーズ2: Before/After diff + 統計表示</div></li>
-      <li><span class="check"></span><div class="body">OCA向け：EDLインポート + 素材ヒートマップ</div></li>
-      <li><span class="check"></span><div class="body">ボイスライブラリ機能（複数話者をTTSで作成・選択）</div></li>
-    </ul>
-  </section>
+  <div id="sections">
+    <div class="loading">読み込み中...</div>
+  </div>
 
   <footer>
     <div>✓ をタップで完了。状態はこの端末に保存されます。</div>
@@ -214,63 +157,94 @@ footer .reset {
 </div>
 
 <script>
-// チェック状態を localStorage に保存
-const KEY = "todo-checked-v1";
+const KEY = "todo-checked-v2";
 
-function load() {
+function loadChecked() {
   try { return JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (_) { return {}; }
 }
-function save(state) {
+function saveChecked(state) {
   localStorage.setItem(KEY, JSON.stringify(state));
 }
 
-const state = load();
+let checkedState = loadChecked();
 
-function makeId(li) {
-  // テキスト内容をIDにする（変更されたら新IDなのでOK）
-  const body = li.querySelector(".body");
-  return body ? body.textContent.trim().slice(0, 80) : null;
+function render(data) {
+  document.getElementById('updated').textContent = `最終更新: ${data.updated}`;
+
+  const container = document.getElementById('sections');
+  container.innerHTML = '';
+
+  data.sections.forEach(section => {
+    const sec = document.createElement('section');
+    sec.dataset.sectionId = section.id;
+
+    const total = section.items.length;
+    const done = section.items.filter(it => checkedState[it.id]).length;
+
+    sec.innerHTML = `<h2>${escapeHtml(section.title)} <span class="count">${done}/${total}</span></h2>`;
+
+    const ul = document.createElement('ul');
+    ul.className = 'todo';
+    section.items.forEach(item => {
+      const li = document.createElement('li');
+      li.dataset.itemId = item.id;
+      if (checkedState[item.id]) li.classList.add('done');
+
+      const tag = data.tagLabels[item.tag] || item.tag;
+      const tagClass = item.tag || 'misc';
+      const noteHtml = item.note ? `<div class="note">${escapeHtml(item.note)}</div>` : '';
+      li.innerHTML = `
+        <span class="check"></span>
+        <div class="body"><span class="tag ${tagClass}">${escapeHtml(tag)}</span>${escapeHtml(item.text)}${noteHtml}</div>
+      `;
+      li.addEventListener('click', () => {
+        if (checkedState[item.id]) delete checkedState[item.id];
+        else checkedState[item.id] = Date.now();
+        saveChecked(checkedState);
+        li.classList.toggle('done');
+        updateCount(sec, section);
+      });
+      ul.appendChild(li);
+    });
+
+    sec.appendChild(ul);
+    container.appendChild(sec);
+  });
 }
 
-function applyState() {
-  document.querySelectorAll("ul.todo li").forEach(li => {
-    const id = makeId(li);
-    if (id && state[id]) li.classList.add("done");
-    else li.classList.remove("done");
-  });
-  updateCounts();
+function updateCount(sectionEl, section) {
+  const done = section.items.filter(it => checkedState[it.id]).length;
+  const total = section.items.length;
+  sectionEl.querySelector('.count').textContent = `${done}/${total}`;
 }
 
-function updateCounts() {
-  document.querySelectorAll("section").forEach(sec => {
-    const ul = sec.querySelector("ul.todo");
-    if (!ul) return;
-    const all = ul.querySelectorAll("li").length;
-    const done = ul.querySelectorAll("li.done").length;
-    const counter = sec.querySelector(".count");
-    if (counter) counter.textContent = `${done}/${all}`;
-  });
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, ch => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[ch]));
 }
-
-document.querySelectorAll("ul.todo li").forEach(li => {
-  li.addEventListener("click", () => {
-    const id = makeId(li);
-    if (!id) return;
-    if (state[id]) delete state[id]; else state[id] = Date.now();
-    save(state);
-    applyState();
-  });
-});
 
 document.getElementById("reset-btn").addEventListener("click", () => {
   if (confirm("すべてのチェックを解除します。よろしいですか？")) {
     localStorage.removeItem(KEY);
-    Object.keys(state).forEach(k => delete state[k]);
-    applyState();
+    checkedState = {};
+    document.querySelectorAll('ul.todo li').forEach(li => li.classList.remove('done'));
+    document.querySelectorAll('section').forEach(sec => {
+      const id = sec.dataset.sectionId;
+      const total = sec.querySelectorAll('li').length;
+      sec.querySelector('.count').textContent = `0/${total}`;
+    });
   }
 });
 
-applyState();
+// データを読み込み
+fetch('data.json?t=' + Date.now())
+  .then(r => r.json())
+  .then(data => render(data))
+  .catch(err => {
+    document.getElementById('sections').innerHTML =
+      `<div class="loading">読み込み失敗: ${err.message}</div>`;
+  });
 </script>
 </body>
 </html>
