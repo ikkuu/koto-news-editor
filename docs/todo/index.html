@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#c2410c">
+<title>佐々木's To-Do</title>
+
+<!-- iOS ホーム画面用 -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="To-Do">
+<link rel="apple-touch-icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' rx='36' fill='%23faf6ec'/><text x='90' y='118' font-size='100' text-anchor='middle' font-family='-apple-system,sans-serif' font-weight='700' fill='%23c2410c'>✓</text></svg>">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' rx='36' fill='%23faf6ec'/><text x='90' y='118' font-size='100' text-anchor='middle' font-family='-apple-system,sans-serif' font-weight='700' fill='%23c2410c'>✓</text></svg>">
+
+<style>
+:root {
+  --bg: #faf6ec;
+  --surface: #ffffff;
+  --ink: #2a1f15;
+  --ink-2: #5a4838;
+  --muted: #998a76;
+  --line: #e6e1d3;
+  --accent: #c2410c;
+  --done: #c0b8a8;
+  --doc: #6a8e5a;
+  --oca: #4a6fa5;
+  --jfc: #c2410c;
+  --ws: #b08560;
+  --koto: #5a2a8a;
+  --misc: #888;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body {
+  margin: 0; padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+.app {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: env(safe-area-inset-top, 16px) 18px env(safe-area-inset-bottom, 32px);
+}
+header {
+  padding: 16px 0 12px;
+  border-bottom: 2px solid var(--ink);
+  margin-bottom: 18px;
+}
+.title { font-size: 22px; font-weight: 800; letter-spacing: 0.02em; }
+.subtitle { font-size: 11px; color: var(--muted); letter-spacing: 0.15em; margin-top: 4px; text-transform: uppercase; }
+.updated { font-size: 11px; color: var(--muted); margin-top: 8px; }
+
+section { margin-bottom: 22px; }
+h2 {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0 0 10px;
+  padding: 4px 10px;
+  background: var(--ink);
+  color: var(--bg);
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+}
+h2 .count { font-size: 11px; color: rgba(250,246,236,0.7); margin-left: auto; }
+
+ul.todo { list-style: none; padding: 0; margin: 0; }
+ul.todo li {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--line);
+  font-size: 15px;
+  line-height: 1.55;
+  cursor: pointer;
+}
+ul.todo li:last-child { border-bottom: none; }
+ul.todo li .check {
+  flex: 0 0 22px;
+  width: 22px; height: 22px;
+  border: 2px solid var(--muted);
+  border-radius: 5px;
+  display: flex; align-items: center; justify-content: center;
+  margin-top: 2px;
+  transition: all 0.15s;
+}
+ul.todo li.done .check {
+  background: var(--ink);
+  border-color: var(--ink);
+}
+ul.todo li.done .check::after {
+  content: "✓";
+  color: var(--bg);
+  font-size: 14px;
+  font-weight: 800;
+}
+ul.todo li.done .body { color: var(--done); text-decoration: line-through; text-decoration-thickness: 1px; }
+.body { flex: 1; }
+.tag {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 1px 6px;
+  border-radius: 3px;
+  margin-right: 6px;
+  vertical-align: middle;
+  color: #fff;
+}
+.tag.doc { background: var(--doc); }
+.tag.oca { background: var(--oca); }
+.tag.jfc { background: var(--jfc); }
+.tag.ws { background: var(--ws); }
+.tag.koto { background: var(--koto); }
+.tag.misc { background: var(--misc); }
+.note { font-size: 12px; color: var(--muted); margin-top: 3px; }
+
+footer {
+  padding: 24px 0 0;
+  font-size: 11px;
+  color: var(--muted);
+  text-align: center;
+  letter-spacing: 0.05em;
+}
+footer .reset {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 4px 12px;
+  border: 1px solid var(--muted);
+  border-radius: 12px;
+  color: var(--muted);
+  cursor: pointer;
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="title">佐々木's To-Do</div>
+    <div class="subtitle">tap to check / hold to keep</div>
+    <div class="updated" id="updated">最終更新: 2026-05-16</div>
+  </header>
+
+  <!-- 🔥 今日の最優先 -->
+  <section>
+    <h2>🔥 今日の最優先 <span class="count" id="count-today">0</span></h2>
+    <ul class="todo" data-section="today">
+      <li><span class="check"></span><div class="body"><span class="tag jfc">公庫</span>5/18(月)朝 公庫面談の予約フォーム送信<div class="note">大阪支店宛、第1〜3希望日時を埋めて送信</div></div></li>
+      <li><span class="check"></span><div class="body"><span class="tag jfc">公庫</span>面談用の書類セット印刷・クリアファイル整理<div class="note">創業計画書v2 / 月別収支 / 企業概要書 / 借入詳細 + 確定申告3期分 + 通帳写し + 本人確認 + 印鑑</div></div></li>
+    </ul>
+  </section>
+
+  <!-- 📅 今週中 -->
+  <section>
+    <h2>📅 今週中 <span class="count" id="count-week">0</span></h2>
+    <ul class="todo" data-section="week">
+      <li><span class="check"></span><div class="body"><span class="tag jfc">公庫</span>面談で聞かれそうな質問の想定回答メモ<div class="note">「なぜ今この事業？」「最初の見込み客は？」「計画通り行かなかった場合」</div></div></li>
+      <li><span class="check"></span><div class="body"><span class="tag misc">他</span>5/20(水)12:30 川口クリニック予約</div></li>
+      <li><span class="check"></span><div class="body"><span class="tag misc">他</span>DailyLog: Gmailアプリパスワード発行 → config.json 更新</div></li>
+      <li><span class="check"></span><div class="body"><span class="tag misc">他</span>DailyLog: Task Scheduler 登録（毎朝6時起動）</div></li>
+      <li><span class="check"></span><div class="body"><span class="tag doc">D</span>マリヲさん宛 メール／LINE 整理稿を送信</div></li>
+    </ul>
+  </section>
+
+  <!-- 🎬 コンクリート、中性になる -->
+  <section>
+    <h2>🎬 コンクリート、中性になる <span class="count" id="count-doc">0</span></h2>
+    <ul class="todo" data-section="doc">
+      <li><span class="check"></span><div class="body">配信価格戦略の決定（階段モデル or 単発単価）→ 創業計画書反映</div></li>
+      <li><span class="check"></span><div class="body">サイトの実写素材（ミキサー車 / 砂利 / 工場）の差し替え検討</div></li>
+      <li><span class="check"></span><div class="body">15秒CM動画イメージ案のレビュー → 着手判断</div></li>
+      <li><span class="check"></span><div class="body">取材先候補のアプローチ整理（関生・KURS含む）</div></li>
+    </ul>
+  </section>
+
+  <!-- 🎓 OCA講義 -->
+  <section>
+    <h2>🎓 OCA講義 <span class="count" id="count-oca">0</span></h2>
+    <ul class="todo" data-section="oca">
+      <li><span class="check"></span><div class="body">5/21(木) 第5回授業の準備</div></li>
+      <li><span class="check"></span><div class="body">9/17(木) 補講(3〜6限/302A教室) 内容組み立て</div></li>
+      <li><span class="check"></span><div class="body">授業報告書テンプレートの更新（CC先追加版で整える）</div></li>
+    </ul>
+  </section>
+
+  <!-- 💼 ワークショップ事業 -->
+  <section>
+    <h2>💼 ワークショップ事業 <span class="count" id="count-ws">0</span></h2>
+    <ul class="todo" data-section="ws">
+      <li><span class="check"></span><div class="body">配布資料 v1 のレビュー＆修正反映</div></li>
+      <li><span class="check"></span><div class="body">プレゼンスライドの言い回し最終確認</div></li>
+      <li><span class="check"></span><div class="body">就労移行支援事業所への営業先リストアップ</div></li>
+      <li><span class="check"></span><div class="body">講師写真 / メインビジュアル写真の差し替え</div></li>
+    </ul>
+  </section>
+
+  <!-- 🛠 kotoedit / 周辺ツール -->
+  <section>
+    <h2>🛠 kotoedit / 周辺ツール <span class="count" id="count-koto">0</span></h2>
+    <ul class="todo" data-section="koto">
+      <li><span class="check"></span><div class="body">フェーズ2: Before/After diff + 統計表示</div></li>
+      <li><span class="check"></span><div class="body">OCA向け：EDLインポート + 素材ヒートマップ</div></li>
+      <li><span class="check"></span><div class="body">ボイスライブラリ機能（複数話者をTTSで作成・選択）</div></li>
+    </ul>
+  </section>
+
+  <footer>
+    <div>✓ をタップで完了。状態はこの端末に保存されます。</div>
+    <span class="reset" id="reset-btn">↻ チェックをすべて解除</span>
+  </footer>
+</div>
+
+<script>
+// チェック状態を localStorage に保存
+const KEY = "todo-checked-v1";
+
+function load() {
+  try { return JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (_) { return {}; }
+}
+function save(state) {
+  localStorage.setItem(KEY, JSON.stringify(state));
+}
+
+const state = load();
+
+function makeId(li) {
+  // テキスト内容をIDにする（変更されたら新IDなのでOK）
+  const body = li.querySelector(".body");
+  return body ? body.textContent.trim().slice(0, 80) : null;
+}
+
+function applyState() {
+  document.querySelectorAll("ul.todo li").forEach(li => {
+    const id = makeId(li);
+    if (id && state[id]) li.classList.add("done");
+    else li.classList.remove("done");
+  });
+  updateCounts();
+}
+
+function updateCounts() {
+  document.querySelectorAll("section").forEach(sec => {
+    const ul = sec.querySelector("ul.todo");
+    if (!ul) return;
+    const all = ul.querySelectorAll("li").length;
+    const done = ul.querySelectorAll("li.done").length;
+    const counter = sec.querySelector(".count");
+    if (counter) counter.textContent = `${done}/${all}`;
+  });
+}
+
+document.querySelectorAll("ul.todo li").forEach(li => {
+  li.addEventListener("click", () => {
+    const id = makeId(li);
+    if (!id) return;
+    if (state[id]) delete state[id]; else state[id] = Date.now();
+    save(state);
+    applyState();
+  });
+});
+
+document.getElementById("reset-btn").addEventListener("click", () => {
+  if (confirm("すべてのチェックを解除します。よろしいですか？")) {
+    localStorage.removeItem(KEY);
+    Object.keys(state).forEach(k => delete state[k]);
+    applyState();
+  }
+});
+
+applyState();
+</script>
+</body>
+</html>
