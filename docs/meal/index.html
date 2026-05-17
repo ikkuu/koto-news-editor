@@ -60,7 +60,35 @@ const TOTAL_MONTHLY = Object.values(MONTHLY).reduce((a,b)=>a+b,0);
 const SHOP_CATS = ["🥬 野菜・果物","🥩 肉・魚","🥚 卵・乳製品","🧂 調味料・乾物","🍞 パン・麺・米","🧴 その他"];
 
 const DISLIKES_DEFAULT = "辛いもの全般（三男NG）、魚の骨が多いもの（次男NG）、生魚・刺身";
-const HISTORY_DEFAULT  = ["カレーライス","ハンバーグ","肉じゃが","ナポリタン","鮭の塩焼き","餃子","豚汁","唐揚げ","オムライス","麻婆豆腐"];
+const HISTORY_DEFAULT  = [
+  {name:"カレーライス", at:null}, {name:"ハンバーグ", at:null}, {name:"肉じゃが", at:null},
+  {name:"ナポリタン", at:null}, {name:"鮭の塩焼き", at:null}, {name:"餃子", at:null},
+  {name:"豚汁", at:null}, {name:"唐揚げ", at:null}, {name:"オムライス", at:null}, {name:"麻婆豆腐", at:null},
+];
+
+// 日付ユーティリティ
+const todayStr = () => new Date().toISOString().slice(0,10);
+const daysSince = (dateStr) => {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  const now = new Date();
+  return Math.floor((now - d) / 86400000);
+};
+const formatAgo = (dateStr) => {
+  const d = daysSince(dateStr);
+  if (d === null) return "未記録";
+  if (d === 0) return "今日";
+  if (d === 1) return "昨日";
+  if (d < 7) return `${d}日前`;
+  if (d < 14) return `${d}日前（先週）`;
+  if (d < 28) return `${d}日前（${Math.floor(d/7)}週前）`;
+  return `${d}日前`;
+};
+// 文字列ベースの古いデータをオブジェクトに移行
+const migrateHistory = (arr) => {
+  if (!Array.isArray(arr)) return HISTORY_DEFAULT;
+  return arr.map(h => typeof h === "string" ? {name: h, at: null} : h);
+};
 
 // 使用モデル（必要に応じて切替: Haiku=cost優先, Sonnet=quality優先, Opus=最高品質）
 const MODEL = "claude-haiku-4-5-20251001";  // Haiku 4.5（既定・コスト優先）
@@ -136,7 +164,7 @@ function App() {
       lastby: sg("lastby"),
     };
     if (loaded.dislikes) setDislikes(loaded.dislikes);
-    if (loaded.history) setHistory(loaded.history);
+    if (loaded.history) setHistory(migrateHistory(loaded.history));
     if (loaded.plan) setPlan(loaded.plan);
     if (loaded.approved) setApproved(loaded.approved);
     if (loaded.shop) setShopList(loaded.shop);
@@ -164,7 +192,11 @@ function App() {
   };
 
   const buildFullPrompt = () => {
-    const hist = history.slice(-20).join("、");
+    const hist = history.slice(-20).map(h => {
+      if (typeof h === "string") return h;
+      const d = daysSince(h.at);
+      return d !== null ? `${h.name}(${d}日前)` : h.name;
+    }).join("、");
     return `あなたは5人家族（パパ・ママ・高校1年男子・中学3年男子・小学生男子）の食事プランナーです。
 1週間（月〜日）の全食事を以下の予算で計画してください。
 
@@ -232,10 +264,15 @@ JSONのみ返してください:
     if (!requireKey()) return;
     setRegenDay(i);
     try {
+      const histStr = history.slice(-20).map(h => {
+        if (typeof h === "string") return h;
+        const d = daysSince(h.at);
+        return d !== null ? `${h.name}(${d}日前)` : h.name;
+      }).join("、");
       const text = await callClaude(apiKey,
         `5人家族（パパ・ママ・高校1年男子・中学3年男子・小学生男子）の夕食。
 NG:${dislikes}
-履歴（重複禁止）:${history.slice(-20).join("、")}
+履歴（重複禁止・近い日付ほど強く避ける）:${histStr}
 予算¥1,500以内、${DAYS[i]}曜日1日分。
 JSONのみ:{"day":"${DAYS[i]}","main":"料理名","side1":"副菜1","side2":"副菜2","cost":数字,"note":"ひとこと"}`, 300);
       const d = JSON.parse(text);
@@ -251,7 +288,7 @@ JSONのみ:{"day":"${DAYS[i]}","main":"料理名","side1":"副菜1","side2":"副
 
   const approveDinner = (i) => {
     if (!plan?.dinners?.[i]) return;
-    const nh = [...history, plan.dinners[i].main];
+    const nh = [...history, { name: plan.dinners[i].main, at: todayStr() }];
     const na = { ...approved, [i]: true };
     setHistory(nh); setApproved(na);
     ss("history", nh); ss("approved", na);
