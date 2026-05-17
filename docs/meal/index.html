@@ -63,8 +63,8 @@ const DISLIKES_DEFAULT = "辛いもの全般（三男NG）、魚の骨が多い�
 const HISTORY_DEFAULT  = ["カレーライス","ハンバーグ","肉じゃが","ナポリタン","鮭の塩焼き","餃子","豚汁","唐揚げ","オムライス","麻婆豆腐"];
 
 // 使用モデル（必要に応じて切替: Haiku=cost優先, Sonnet=quality優先, Opus=最高品質）
-const MODEL = "claude-sonnet-4-6";  // Sonnet 4.6（既定）
-// const MODEL = "claude-haiku-4-5-20251001";  // Haikuに切り替えるならコメントアウト解除
+const MODEL = "claude-haiku-4-5-20251001";  // Haiku 4.5（既定・コスト優先）
+// const MODEL = "claude-sonnet-4-6";        // Sonnet 4.6に切り替えるならコメントアウト解除（品質優先）
 
 // ── localStorage ストレージ ───────────────────────────────
 const sg = (k) => {
