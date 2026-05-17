@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a0f1e">
+<title>家族の食事プランナー</title>
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="献立">
+<link rel="apple-touch-icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' rx='36' fill='%230a0f1e'/><text x='90' y='128' font-size='110' text-anchor='middle'>🍱</text></svg>">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' rx='36' fill='%230a0f1e'/><text x='90' y='128' font-size='110' text-anchor='middle'>🍱</text></svg>">
+
+<style>
+html, body { margin: 0; padding: 0; background: #0a0f1e; }
+* { -webkit-tap-highlight-color: transparent; }
+.boot {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 100vh; color: #475569; font-family: -apple-system, sans-serif;
+}
+</style>
+
+<!-- React 18 + Babel Standalone -->
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+<div id="root"><div class="boot">読み込み中...</div></div>
+
+<script type="text/babel" data-presets="env,react">
+const { useState, useEffect, useRef } = React;
+
+// ── 定数 ────────────────────────────────────────────────────
+const FAMILY = [
+  { id:"papa",   name:"パパ",       icon:"👨", color:"#60a5fa" },
+  { id:"mama",   name:"ママ",       icon:"👩", color:"#f472b6" },
+  { id:"taro",   name:"長男（高1）", icon:"🧑", color:"#fb923c" },
+  { id:"jiro",   name:"次男（中3）", icon:"👦", color:"#34d399" },
+  { id:"saburo", name:"三男（小2）",  icon:"👶", color:"#a78bfa" },
+];
+const USERS = FAMILY;
+const DAYS  = ["月","火","水","木","金","土","日"];
+const WEEKDAYS = [0,1,2,3,4];
+const WEEKEND  = [5,6];
+
+const BUDGET = {
+  dinner: 1500, breakfast: 700, parentLunch: 600, bento: 300, weekendLunch: 1500,
+};
+const MONTHLY = {
+  breakfast:    BUDGET.breakfast    * 30,
+  parentLunch:  BUDGET.parentLunch  * 22,
+  bento:        BUDGET.bento        * 22,
+  weekendLunch: BUDGET.weekendLunch * 8,
+  dinner:       BUDGET.dinner       * 30,
+};
+const TOTAL_MONTHLY = Object.values(MONTHLY).reduce((a,b)=>a+b,0);
+
+const SHOP_CATS = ["🥬 野菜・果物","🥩 肉・魚","🥚 卵・乳製品","🧂 調味料・乾物","🍞 パン・麺・米","🧴 その他"];
+
+const DISLIKES_DEFAULT = "辛いもの全般（三男NG）、魚の骨が多いもの（次男NG）、生魚・刺身";
+const HISTORY_DEFAULT  = ["カレーライス","ハンバーグ","肉じゃが","ナポリタン","鮭の塩焼き","餃子","豚汁","唐揚げ","オムライス","麻婆豆腐"];
+
+// 使用モデル（必要に応じて切替: Haiku=cost優先, Sonnet=quality優先, Opus=最高品質）
+const MODEL = "claude-sonnet-4-6";  // Sonnet 4.6（既定）
+// const MODEL = "claude-haiku-4-5-20251001";  // Haikuに切り替えるならコメントアウト解除
+
+// ── localStorage ストレージ ───────────────────────────────
+const sg = (k) => {
+  try { const v = localStorage.getItem("mp-" + k); return v ? JSON.parse(v) : null; }
+  catch { return null; }
+};
+const ss = (k, v) => {
+  try { localStorage.setItem("mp-" + k, JSON.stringify(v)); }
+  catch {}
+};
+
+// ── Claude API 呼び出し ──────────────────────────────────
+async function callClaude(apiKey, content, maxTokens = 2000) {
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+      "anthropic-dangerous-direct-browser-access": "true",
+    },
+    body: JSON.stringify({
+      model: MODEL,
+      max_tokens: maxTokens,
+      messages: [{ role: "user", content }],
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`API error ${res.status}: ${err.slice(0, 200)}`);
+  }
+  const data = await res.json();
+  return data.content.map(c => c.text || "").join("").replace(/```json|```/g, "").trim();
+}
+
+// ── メイン ─────────────────────────────────────────────────
+function App() {
+  const [me, setMe] = useState(null);
+  const [tab, setTab] = useState("week");
+  const [dislikes, setDislikes] = useState(DISLIKES_DEFAULT);
+  const [history, setHistory] = useState(HISTORY_DEFAULT);
+  const [plan, setPlan] = useState(null);
+  const [approved, setApproved] = useState({});
+  const [shopList, setShopList] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [shopLoading, setShopLoading] = useState(false);
+  const [regenDay, setRegenDay] = useState(null);
+  const [newItem, setNewItem] = useState("");
+  const [newCat, setNewCat] = useState(SHOP_CATS[0]);
+  const [lastBy, setLastBy] = useState(null);
+  const [viewDay, setViewDay] = useState(null);
+  const [apiKey, setApiKey] = useState("");
+  const [showSettings, setShowSettings] = useState(false);
+  const [apiKeyDraft, setApiKeyDraft] = useState("");
+
+  // 初期ロード
+  useEffect(() => {
+    const savedMe = localStorage.getItem("mp-me");
+    if (savedMe) setMe(savedMe);
+    const savedKey = localStorage.getItem("mp-apikey");
+    if (savedKey) setApiKey(savedKey);
+
+    const loaded = {
+      dislikes: sg("dislikes"),
+      history: sg("history"),
+      plan: sg("plan"),
+      approved: sg("approved"),
+      shop: sg("shop"),
+      lastby: sg("lastby"),
+    };
+    if (loaded.dislikes) setDislikes(loaded.dislikes);
+    if (loaded.history) setHistory(loaded.history);
+    if (loaded.plan) setPlan(loaded.plan);
+    if (loaded.approved) setApproved(loaded.approved);
+    if (loaded.shop) setShopList(loaded.shop);
+    if (loaded.lastby) setLastBy(loaded.lastby);
+  }, []);
+
+  const myInfo = FAMILY.find(f => f.id === me);
+  const stamp = (label) => {
+    const s = {
+      by: myInfo?.name,
+      icon: myInfo?.icon,
+      label,
+      at: new Date().toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" }),
+    };
+    setLastBy(s); ss("lastby", s);
+  };
+
+  const requireKey = () => {
+    if (!apiKey) {
+      alert("先に右上の⚙設定からAnthropic APIキーを登録してください");
+      setShowSettings(true);
+      return false;
+    }
+    return true;
+  };
+
+  const buildFullPrompt = () => {
+    const hist = history.slice(-20).join("、");
+    return `あなたは5人家族（パパ・ママ・高校1年男子・中学3年男子・小学生男子）の食事プランナーです。
+1週間（月〜日）の全食事を以下の予算で計画してください。
+
+【苦手・NG食材】
+${dislikes}
+
+【直近の夕食履歴（重複禁止）】${hist}
+
+【予算（1日あたり）】
+- 朝食（5人）: ¥700
+- パパ・ママの平日昼（2人）: ¥600
+- 長男弁当（1人・平日のみ）: ¥300
+- 週末昼食（5人・土日）: ¥1,500
+- 夕食（5人）: ¥1,500
+
+【ルール】
+- 美味しさ・満足感重視（男子3人ボリューム感を意識）
+- 弁当は前日夕食の残り活用を優先し、なければ別メニュー
+- 朝食はトーストベースだが毎日同じにならないよう変化をつける
+- 夕食は和・洋・中をバランスよく、連続したジャンル禁止
+- 週末昼は家族で食べるので5人分、簡単〜普通の難易度
+
+必ずJSONのみ返してください（説明・\`\`\`不要）:
+{"dinners":[{"day":"月","main":"料理名","side1":"副菜1","side2":"副菜2","cost":数字,"note":"ひとこと"}],"breakfasts":[{"day":"月","menu":"内容","cost":数字}],"bentos":[{"day":"月","menu":"内容","from_dinner":true/false,"cost":数字}],"parentLunches":[{"day":"月","menu":"内容","cost":数字}],"weekendLunches":[{"day":"土","menu":"内容","cost":数字},{"day":"日","menu":"内容","cost":数字}]}
+dinners/breakfastsは7件（月〜日）、bentos/parentLunchesは5件（月〜金）、weekendLunchesは2件。`;
+  };
+
+  const buildShopPrompt = (approvedPlan) => {
+    const all = [];
+    if (approvedPlan?.dinners) approvedPlan.dinners.forEach(d => all.push(`【夕食】${d.main}、${d.side1||""}、${d.side2||""}`));
+    if (approvedPlan?.breakfasts) approvedPlan.breakfasts.forEach(d => all.push(`【朝食】${d.menu}`));
+    if (approvedPlan?.bentos) approvedPlan.bentos.forEach(d => all.push(`【弁当】${d.menu}`));
+    if (approvedPlan?.parentLunches) approvedPlan.parentLunches.forEach(d => all.push(`【昼食（大人）】${d.menu}`));
+    if (approvedPlan?.weekendLunches) approvedPlan.weekendLunches.forEach(d => all.push(`【週末昼】${d.menu}`));
+    return `以下の1週間の全食事に必要な買い物リストを作成してください。家族5人（大人2・高校生1・中学生1・小学生1）。
+
+${all.join("\n")}
+
+ルール:
+- カテゴリは "🥬 野菜・果物","🥩 肉・魚","🥚 卵・乳製品","🧂 調味料・乾物","🍞 パン・麺・米","🧴 その他" のいずれか
+- 重複食材はまとめる、醤油・塩・砂糖・油など常備品は除外
+- 量は人数分を明記
+
+JSONのみ返してください:
+{"items":[{"cat":"カテゴリ","name":"食材","qty":"量"}]}`;
+  };
+
+  const generate = async () => {
+    if (!requireKey()) return;
+    setLoading(true);
+    try {
+      const text = await callClaude(apiKey, buildFullPrompt(), 2000);
+      const parsed = JSON.parse(text);
+      setPlan(parsed); setApproved({}); setShopList([]);
+      ss("plan", parsed); ss("approved", {}); ss("shop", []);
+      stamp("献立を生成");
+    } catch (e) {
+      console.error(e);
+      alert("生成失敗: " + e.message);
+    }
+    setLoading(false);
+  };
+
+  const regenDinner = async (i) => {
+    if (!requireKey()) return;
+    setRegenDay(i);
+    try {
+      const text = await callClaude(apiKey,
+        `5人家族（パパ・ママ・高校1年男子・中学3年男子・小学生男子）の夕食。
+NG:${dislikes}
+履歴（重複禁止）:${history.slice(-20).join("、")}
+予算¥1,500以内、${DAYS[i]}曜日1日分。
+JSONのみ:{"day":"${DAYS[i]}","main":"料理名","side1":"副菜1","side2":"副菜2","cost":数字,"note":"ひとこと"}`, 300);
+      const d = JSON.parse(text);
+      const np = { ...plan, dinners: [...plan.dinners] };
+      np.dinners[i] = d;
+      const na = { ...approved }; delete na[i];
+      setPlan(np); setApproved(na);
+      ss("plan", np); ss("approved", na);
+      stamp(`${DAYS[i]}曜の夕食を再生成`);
+    } catch (e) { alert("再生成失敗: " + e.message); }
+    setRegenDay(null);
+  };
+
+  const approveDinner = (i) => {
+    if (!plan?.dinners?.[i]) return;
+    const nh = [...history, plan.dinners[i].main];
+    const na = { ...approved, [i]: true };
+    setHistory(nh); setApproved(na);
+    ss("history", nh); ss("approved", na);
+    stamp(`${DAYS[i]}曜を確定`);
+  };
+
+  const genShopList = async () => {
+    if (!plan) { alert("先に献立を生成してください"); return; }
+    if (!requireKey()) return;
+    setShopLoading(true);
+    try {
+      const text = await callClaude(apiKey, buildShopPrompt(plan), 1200);
+      const parsed = JSON.parse(text);
+      const items = parsed.items.map((it, idx) => ({
+        id: `i${Date.now()}${idx}`, cat: it.cat, name: it.name, qty: it.qty, checked: false, by: null,
+      }));
+      setShopList(items); ss("shop", items);
+      stamp("買い物リストを生成");
+    } catch (e) { console.error(e); alert("買い物リスト生成失敗: " + e.message); }
+    setShopLoading(false);
+  };
+
+  const toggleShop = (id) => {
+    const up = shopList.map(it => it.id === id ? { ...it, checked: !it.checked, by: !it.checked ? myInfo?.name : null } : it);
+    setShopList(up); ss("shop", up);
+  };
+  const removeShop = (id) => { const up = shopList.filter(it => it.id !== id); setShopList(up); ss("shop", up); };
+  const addShop = () => {
+    if (!newItem.trim()) return;
+    const up = [...shopList, { id: `m${Date.now()}`, cat: newCat, name: newItem.trim(), qty: "", checked: false, by: null }];
+    setShopList(up); setNewItem(""); ss("shop", up);
+  };
+  const clearChecked = () => { const up = shopList.filter(it => !it.checked); setShopList(up); ss("shop", up); };
+
+  const weekActual = plan ? {
+    dinners: (plan.dinners || []).reduce((s, d) => s + (d.cost || 0), 0),
+    breakfasts: (plan.breakfasts || []).reduce((s, d) => s + (d.cost || 0), 0),
+    bentos: (plan.bentos || []).reduce((s, d) => s + (d.cost || 0), 0),
+    parentLunches: (plan.parentLunches || []).reduce((s, d) => s + (d.cost || 0), 0),
+    weekendLunches: (plan.weekendLunches || []).reduce((s, d) => s + (d.cost || 0), 0),
+  } : null;
+  const weekTotal = weekActual ? Object.values(weekActual).reduce((a, b) => a + b, 0) : 0;
+  const weekBudget = BUDGET.dinner * 7 + BUDGET.breakfast * 7 + BUDGET.parentLunch * 5 + BUDGET.bento * 5 + BUDGET.weekendLunch * 2;
+  const checkedN = shopList.filter(i => i.checked).length;
+
+  // ユーザー選択画面
+  if (!me) return (
+    <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#0a0f1e,#111827)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}}>
+      <div style={{fontSize:44,marginBottom:8}}>🍱</div>
+      <h1 style={{color:"#f1f5f9",fontSize:20,fontWeight:800,margin:"0 0 4px",letterSpacing:1}}>家族の食事プランナー</h1>
+      <p style={{color:"#475569",fontSize:12,margin:"0 0 32px"}}>3食 × 月10万円 × 5人家族</p>
+      <div style={{display:"flex",flexDirection:"column",gap:10,width:"100%",maxWidth:260}}>
+        {USERS.map(u=>(
+          <button key={u.id} onClick={()=>{setMe(u.id);localStorage.setItem("mp-me",u.id);}} style={{
+            display:"flex",alignItems:"center",gap:16,
+            background:`${u.color}11`,border:`1.5px solid ${u.color}33`,
+            borderRadius:14,padding:"14px 20px",cursor:"pointer",transition:"all 0.15s",
+          }}>
+            <span style={{fontSize:26}}>{u.icon}</span>
+            <span style={{color:"#f1f5f9",fontSize:15,fontWeight:600}}>{u.name}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
+  const C = myInfo?.color || "#60a5fa";
+
+  return (
+    <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#0a0f1e 0%,#0f1f2e 60%,#0a1a0f 100%)",fontFamily:"'Hiragino Sans','Meiryo',sans-serif",color:"#e2e8f0"}}>
+
+      {/* 設定モーダル */}
+      {showSettings && (
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+          <div style={{background:"#0f1f2e",border:"1px solid rgba(255,255,255,0.1)",borderRadius:16,padding:24,maxWidth:420,width:"100%"}}>
+            <div style={{fontSize:16,fontWeight:700,marginBottom:12}}>⚙ 設定</div>
+            <div style={{fontSize:12,color:"#94a3b8",marginBottom:8}}>Anthropic APIキー（端末にのみ保存されます）</div>
+            <input
+              type="password"
+              defaultValue={apiKey}
+              onChange={e=>setApiKeyDraft(e.target.value)}
+              placeholder="sk-ant-..."
+              style={{width:"100%",background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:8,color:"#e2e8f0",padding:"10px 12px",fontSize:13,outline:"none",boxSizing:"border-box",marginBottom:12}}
+            />
+            <div style={{fontSize:10,color:"#64748b",lineHeight:1.7,marginBottom:16}}>
+              ※ console.anthropic.com から取得した API キーを入力してください。<br/>
+              ※ キーは端末の localStorage にのみ保存され、サーバーには送信されません。<br/>
+              ※ 献立生成1回あたり概算 ¥3〜10 程度。
+            </div>
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={()=>setShowSettings(false)} style={{flex:1,background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",color:"#94a3b8",borderRadius:8,padding:"10px",fontSize:13,cursor:"pointer"}}>キャンセル</button>
+              <button onClick={()=>{
+                const k = apiKeyDraft || apiKey;
+                setApiKey(k);
+                localStorage.setItem("mp-apikey", k);
+                setShowSettings(false);
+                stamp("APIキーを保存");
+              }} style={{flex:1,background:"#22c55e",border:"none",color:"#fff",borderRadius:8,padding:"10px",fontSize:13,fontWeight:700,cursor:"pointer"}}>保存</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ヘッダー */}
+      <div style={{background:"rgba(255,255,255,0.03)",backdropFilter:"blur(16px)",borderBottom:"1px solid rgba(255,255,255,0.07)",padding:"10px 14px 0",position:"sticky",top:0,zIndex:100}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <span style={{fontSize:20}}>🍱</span>
+            <div>
+              <div style={{fontSize:14,fontWeight:700}}>家族の食事プラン</div>
+              {lastBy && <div style={{fontSize:10,color:"#475569"}}>{lastBy.icon} {lastBy.by}が{lastBy.label}（{lastBy.at}）</div>}
+            </div>
+          </div>
+          <div style={{display:"flex",gap:8,alignItems:"center"}}>
+            {plan && (
+              <div style={{fontSize:11,background:weekTotal<=weekBudget?"#22c55e22":"#ef444422",color:weekTotal<=weekBudget?"#22c55e":"#ef4444",padding:"3px 10px",borderRadius:10,border:`1px solid ${weekTotal<=weekBudget?"#22c55e44":"#ef444444"}`}}>
+                週¥{weekTotal.toLocaleString()}
+              </div>
+            )}
+            <button onClick={()=>{setApiKeyDraft(apiKey);setShowSettings(true);}} style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:16,padding:"4px 10px",cursor:"pointer",color:"#94a3b8",fontSize:11}}>⚙</button>
+            <button onClick={()=>{setMe(null);localStorage.removeItem("mp-me");}} style={{background:`${C}18`,border:`1px solid ${C}33`,borderRadius:16,padding:"4px 10px",cursor:"pointer",color:C,fontSize:11,fontWeight:600}}>
+              {myInfo?.icon} {myInfo?.name}
+            </button>
+          </div>
+        </div>
+        <div style={{display:"flex",gap:2,overflowX:"auto",paddingBottom:1}}>
+          {[["week","📅","週間プラン"],["shop","🛒",`買い物${shopList.length>0?` ${checkedN}/${shopList.length}`:""}`],["budget","💰","予算"],["log","📖","ログ"]].map(([k,ic,lb])=>(
+            <button key={k} onClick={()=>setTab(k)} style={{
+              padding:"7px 12px",borderRadius:"8px 8px 0 0",border:"none",cursor:"pointer",whiteSpace:"nowrap",
+              background:tab===k?"rgba(255,255,255,0.09)":"transparent",
+              color:tab===k?"#f1f5f9":"#475569",fontSize:12,fontWeight:tab===k?700:400,
+              borderBottom:tab===k?`2px solid ${C}`:"2px solid transparent",
+            }}>{ic} {lb}</button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{padding:"14px 12px 80px",maxWidth:720,margin:"0 auto"}}>
+
+        {/* 週間プラン */}
+        {tab==="week" && (
+          <div>
+            <button onClick={generate} disabled={loading} style={{
+              width:"100%",marginBottom:14,
+              background:loading?"#1e293b":`linear-gradient(135deg,${C},${C}aa)`,
+              color:"#fff",border:"none",borderRadius:14,padding:"14px",
+              fontSize:14,fontWeight:800,cursor:loading?"not-allowed":"pointer",
+              boxShadow:loading?"none":`0 4px 24px ${C}44`,letterSpacing:0.5,
+            }}>
+              {loading?"⏳ AIが3食分の献立を考えています...":"✨ 1週間の全食事プランを生成（朝・昼・夕・弁当）"}
+            </button>
+
+            {!plan && !loading && (
+              <div style={{textAlign:"center",padding:"50px 20px",background:"rgba(255,255,255,0.03)",borderRadius:20,border:"1px dashed rgba(255,255,255,0.08)"}}>
+                <div style={{fontSize:48,marginBottom:12}}>🍳</div>
+                <p style={{color:"#475569",fontSize:13,lineHeight:2}}>
+                  ボタンを押すと<br/>
+                  <span style={{color:"#94a3b8"}}>夕食・朝食・弁当・昼食</span><br/>
+                  全部まとめてAIが提案します
+                </p>
+              </div>
+            )}
+
+            {plan && (
+              <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                {DAYS.map((day,i)=>{
+                  const dinner = plan.dinners?.[i];
+                  const bfast  = plan.breakfasts?.[i];
+                  const bento  = WEEKDAYS.includes(i) ? plan.bentos?.[WEEKDAYS.indexOf(i)] : null;
+                  const plunch = WEEKDAYS.includes(i) ? plan.parentLunches?.[WEEKDAYS.indexOf(i)] : null;
+                  const wlunch = WEEKEND.includes(i)  ? plan.weekendLunches?.[WEEKEND.indexOf(i)] : null;
+                  const isApp  = approved[i];
+                  const expanded = viewDay === i;
+                  return (
+                    <div key={i} style={{background:isApp?"rgba(34,197,94,0.07)":"rgba(255,255,255,0.03)",border:`1px solid ${isApp?"rgba(34,197,94,0.25)":"rgba(255,255,255,0.07)"}`,borderRadius:16,overflow:"hidden"}}>
+                      <div style={{display:"flex",alignItems:"center",gap:10,padding:"12px 14px",cursor:"pointer"}} onClick={()=>setViewDay(expanded?null:i)}>
+                        <div style={{background:isApp?"#22c55e":`${C}25`,color:isApp?"#fff":C,borderRadius:8,padding:"4px 10px",fontSize:14,fontWeight:800,minWidth:32,textAlign:"center"}}>
+                          {day}
+                        </div>
+                        <div style={{flex:1}}>
+                          <div style={{fontSize:15,fontWeight:700,marginBottom:2}}>
+                            {dinner?.main || "—"}
+                            {isApp && <span style={{fontSize:10,background:"#22c55e22",color:"#22c55e",padding:"1px 7px",borderRadius:8,marginLeft:8}}>✓確定</span>}
+                          </div>
+                          <div style={{fontSize:11,color:"#475569"}}>
+                            🌅 {bfast?.menu || "—"}
+                            {(bento||plunch) && <span style={{marginLeft:10}}>🍱 {bento?.menu||plunch?.menu||"—"}</span>}
+                            {wlunch && <span style={{marginLeft:10}}>☀️ {wlunch.menu}</span>}
+                          </div>
+                        </div>
+                        <div style={{display:"flex",alignItems:"center",gap:8}}>
+                          {dinner?.cost && <span style={{fontSize:11,color:"#fbbf24",background:"rgba(251,191,36,0.1)",padding:"2px 8px",borderRadius:8}}>¥{dinner.cost}</span>}
+                          <span style={{color:"#475569",fontSize:12}}>{expanded?"▲":"▼"}</span>
+                        </div>
+                      </div>
+
+                      {expanded && (
+                        <div style={{padding:"0 14px 14px",borderTop:"1px solid rgba(255,255,255,0.06)"}}>
+                          <MealRow icon="🌅" label="朝食" menu={bfast?.menu} cost={bfast?.cost} budget={BUDGET.breakfast} note="5人分" />
+                          {bento && <MealRow icon="🍱" label={`弁当（長男）`} menu={bento.menu} cost={bento.cost} budget={BUDGET.bento} note={bento.from_dinner?"前日の残り活用":"別途作成"} highlight={bento.from_dinner?"#34d399":null} />}
+                          {plunch && <MealRow icon="🍴" label="昼食（パパ・ママ）" menu={plunch.menu} cost={plunch.cost} budget={BUDGET.parentLunch} note="2人分" />}
+                          {wlunch && <MealRow icon="☀️" label="昼食（5人）" menu={wlunch.menu} cost={wlunch.cost} budget={BUDGET.weekendLunch} note="週末" />}
+                          {dinner && (
+                            <div style={{background:"rgba(255,255,255,0.04)",borderRadius:12,padding:12,marginTop:8}}>
+                              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+                                <span>🍽</span>
+                                <span style={{fontSize:12,fontWeight:700,color:"#94a3b8"}}>夕食</span>
+                                <span style={{fontSize:12,fontWeight:700}}>{dinner.main}</span>
+                                <span style={{fontSize:11,color:"#fbbf24",marginLeft:"auto"}}>¥{dinner.cost} / ¥{BUDGET.dinner}</span>
+                              </div>
+                              {(dinner.side1||dinner.side2) && <div style={{fontSize:11,color:"#475569",marginBottom:4}}>副菜：{[dinner.side1,dinner.side2].filter(Boolean).join(" ／ ")}</div>}
+                              {dinner.note && <div style={{fontSize:11,color:"#64748b",fontStyle:"italic",marginBottom:8}}>💡 {dinner.note}</div>}
+                              <div style={{display:"flex",gap:8,marginTop:6}}>
+                                <button onClick={()=>regenDinner(i)} disabled={regenDay===i||isApp} style={{flex:1,background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:8,padding:"7px",fontSize:12,cursor:isApp?"not-allowed":"pointer",color:"#94a3b8",opacity:isApp?0.3:1}}>
+                                  {regenDay===i?"⏳":"🔄 再生成"}
+                                </button>
+                                {!isApp && <button onClick={()=>approveDinner(i)} style={{flex:1,background:"#22c55e22",border:"1px solid #22c55e44",color:"#22c55e",borderRadius:8,padding:"7px",fontSize:12,cursor:"pointer",fontWeight:700}}>✓ 確定</button>}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
+                <button onClick={genShopList} disabled={shopLoading} style={{
+                  width:"100%",marginTop:4,
+                  background:shopLoading?"#1e293b":"linear-gradient(135deg,#f97316,#fb923c88)",
+                  color:"#fff",border:"none",borderRadius:14,padding:"12px",
+                  fontSize:13,fontWeight:700,cursor:shopLoading?"not-allowed":"pointer",
+                  boxShadow:shopLoading?"none":"0 4px 16px rgba(249,115,22,0.3)",
+                }}>
+                  {shopLoading?"⏳ 生成中...":"🛒 この献立から買い物リストを生成"}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 買い物リスト */}
+        {tab==="shop" && (
+          <div>
+            {shopList.length > 0 && (
+              <div style={{background:"rgba(255,255,255,0.04)",borderRadius:14,padding:12,marginBottom:14,border:"1px solid rgba(255,255,255,0.07)"}}>
+                <div style={{display:"flex",justifyContent:"space-between",marginBottom:6,fontSize:12,color:"#94a3b8"}}>
+                  <span>{checkedN}/{shopList.length} チェック済み</span>
+                  <span>{Math.round(checkedN/shopList.length*100) || 0}%完了</span>
+                </div>
+                <div style={{background:"rgba(255,255,255,0.05)",borderRadius:6,height:6,overflow:"hidden"}}>
+                  <div style={{height:"100%",width:`${shopList.length>0?checkedN/shopList.length*100:0}%`,background:"linear-gradient(90deg,#22c55e,#4ade80)",transition:"width 0.4s",borderRadius:6}}/>
+                </div>
+              </div>
+            )}
+            {shopList.length === 0 ? (
+              <div style={{textAlign:"center",padding:"50px 20px",background:"rgba(255,255,255,0.03)",borderRadius:20,border:"1px dashed rgba(255,255,255,0.08)"}}>
+                <div style={{fontSize:40,marginBottom:10}}>🛒</div>
+                <p style={{color:"#475569",fontSize:13}}>週間プランタブで献立を生成してから<br/>買い物リストを作成してください</p>
+              </div>
+            ) : (
+              <div style={{display:"flex",flexDirection:"column",gap:14}}>
+                {SHOP_CATS.map(cat => {
+                  const items = shopList.filter(it => it.cat === cat);
+                  if (!items.length) return null;
+                  return (
+                    <div key={cat}>
+                      <div style={{fontSize:11,fontWeight:700,color:"#64748b",marginBottom:6,letterSpacing:1}}>{cat}</div>
+                      <div style={{display:"flex",flexDirection:"column",gap:5}}>
+                        {items.map(it => (
+                          <div key={it.id} style={{display:"flex",alignItems:"center",gap:10,background:it.checked?"rgba(34,197,94,0.06)":"rgba(255,255,255,0.04)",border:`1px solid ${it.checked?"rgba(34,197,94,0.2)":"rgba(255,255,255,0.07)"}`,borderRadius:10,padding:"9px 12px"}}>
+                            <button onClick={()=>toggleShop(it.id)} style={{width:20,height:20,borderRadius:5,border:`2px solid ${it.checked?"#22c55e":"rgba(255,255,255,0.2)"}`,background:it.checked?"#22c55e":"transparent",cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,color:"#fff"}}>
+                              {it.checked && "✓"}
+                            </button>
+                            <span style={{flex:1,fontSize:13,color:it.checked?"#475569":"#e2e8f0",textDecoration:it.checked?"line-through":"none"}}>{it.name}</span>
+                            {it.qty && <span style={{fontSize:11,color:"#64748b"}}>{it.qty}</span>}
+                            {it.by && <span style={{fontSize:10,color:"#22c55e"}}>{FAMILY.find(f=>f.name===it.by)?.icon}</span>}
+                            <button onClick={()=>removeShop(it.id)} style={{background:"none",border:"none",color:"#334155",cursor:"pointer",fontSize:14,padding:0}}>×</button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+                <div style={{background:"rgba(255,255,255,0.03)",borderRadius:14,padding:12,border:"1px solid rgba(255,255,255,0.07)"}}>
+                  <div style={{fontSize:11,color:"#475569",marginBottom:8}}>＋ 手動追加</div>
+                  <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                    <select value={newCat} onChange={e=>setNewCat(e.target.value)} style={{background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:7,color:"#e2e8f0",padding:"6px 8px",fontSize:11}}>
+                      {SHOP_CATS.map(c=><option key={c} value={c}>{c}</option>)}
+                    </select>
+                    <input value={newItem} onChange={e=>setNewItem(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addShop()} placeholder="食材名..." style={{flex:1,minWidth:80,background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:7,color:"#e2e8f0",padding:"6px 10px",fontSize:12,outline:"none"}}/>
+                    <button onClick={addShop} style={{background:`${C}22`,border:`1px solid ${C}44`,color:C,borderRadius:7,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer"}}>追加</button>
+                  </div>
+                </div>
+                {checkedN > 0 && <button onClick={clearChecked} style={{width:"100%",background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.18)",borderRadius:12,color:"#f87171",padding:"9px",fontSize:12,cursor:"pointer"}}>チェック済みを削除（{checkedN}件）</button>}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 予算 */}
+        {tab==="budget" && (
+          <div style={{display:"flex",flexDirection:"column",gap:12}}>
+            <div style={{background:"rgba(255,255,255,0.04)",borderRadius:16,padding:16,border:"1px solid rgba(255,255,255,0.08)"}}>
+              <div style={{fontSize:12,color:"#64748b",marginBottom:4}}>月間目標予算</div>
+              <div style={{fontSize:28,fontWeight:800,color:"#f1f5f9"}}>¥{(100000).toLocaleString()}</div>
+              <div style={{fontSize:11,color:"#475569",marginTop:2}}>給食費は別途（約¥10,000/月）</div>
+            </div>
+            {[
+              ["🌅 朝食（5人）","¥700/日 × 30日","毎日",MONTHLY.breakfast],
+              ["🍴 昼食 パパ・ママ（平日）","¥600/日 × 22日","月〜金",MONTHLY.parentLunch],
+              ["🍱 弁当 長男（平日）","¥300/日 × 22日","月〜金",MONTHLY.bento],
+              ["☀️ 週末昼食（5人）","¥1,500/日 × 8日","土・日",MONTHLY.weekendLunch],
+              ["🍽 夕食（5人）","¥1,500/日 × 30日","毎日",MONTHLY.dinner],
+            ].map(([label,sub,freq,amount])=>(
+              <div key={label} style={{background:"rgba(255,255,255,0.04)",borderRadius:14,padding:"12px 16px",border:"1px solid rgba(255,255,255,0.07)"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                  <div>
+                    <div style={{fontSize:13,fontWeight:600,marginBottom:2}}>{label}</div>
+                    <div style={{fontSize:11,color:"#475569"}}>{sub}　<span style={{color:"#64748b"}}>{freq}</span></div>
+                  </div>
+                  <div style={{fontSize:16,fontWeight:700,color:"#fbbf24"}}>¥{amount.toLocaleString()}</div>
+                </div>
+                <div style={{background:"rgba(255,255,255,0.05)",borderRadius:4,height:4,marginTop:10,overflow:"hidden"}}>
+                  <div style={{height:"100%",width:`${amount/100000*100}%`,background:`linear-gradient(90deg,${C},${C}88)`,borderRadius:4}}/>
+                </div>
+              </div>
+            ))}
+            <div style={{background:`${C}11`,borderRadius:14,padding:"14px 16px",border:`1px solid ${C}33`}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <div style={{fontSize:14,fontWeight:700}}>合計見込み</div>
+                <div style={{fontSize:20,fontWeight:800,color:TOTAL_MONTHLY<=100000?"#22c55e":"#f87171"}}>
+                  ¥{TOTAL_MONTHLY.toLocaleString()}
+                </div>
+              </div>
+              <div style={{fontSize:11,color:"#475569",marginTop:4}}>
+                {TOTAL_MONTHLY<=100000
+                  ? `✓ 目標内（¥${(100000-TOTAL_MONTHLY).toLocaleString()}の余裕）`
+                  : `△ ¥${(TOTAL_MONTHLY-100000).toLocaleString()}オーバー`}
+              </div>
+            </div>
+
+            <div style={{background:"rgba(255,255,255,0.04)",borderRadius:14,padding:"12px 16px",border:"1px solid rgba(255,255,255,0.07)",marginTop:4}}>
+              <div style={{fontSize:12,fontWeight:700,color:"#94a3b8",marginBottom:8}}>⚠️ 家族のNG・苦手食材</div>
+              <textarea value={dislikes} onChange={e=>setDislikes(e.target.value)} rows={3} style={{width:"100%",background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:8,color:"#e2e8f0",padding:"8px 10px",fontSize:12,resize:"vertical",outline:"none",boxSizing:"border-box"}}/>
+              <button onClick={()=>{ss("dislikes",dislikes);stamp("NG食材を更新");}} style={{marginTop:8,background:`${C}22`,border:`1px solid ${C}44`,color:C,borderRadius:8,padding:"7px 16px",fontSize:12,fontWeight:700,cursor:"pointer"}}>保存</button>
+            </div>
+          </div>
+        )}
+
+        {/* ログ */}
+        {tab==="log" && (
+          <div>
+            <div style={{background:"rgba(255,255,255,0.04)",borderRadius:12,padding:"10px 14px",border:"1px solid rgba(255,255,255,0.07)",fontSize:11,color:"#475569",marginBottom:14,lineHeight:1.8}}>
+              📖 確定した夕食が自動蓄積されます。AIはこれを参照して重複を避けます。
+            </div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:7,marginBottom:16}}>
+              {history.map((meal,i)=>(
+                <div key={i} style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.09)",borderRadius:16,padding:"5px 12px",fontSize:12,display:"flex",alignItems:"center",gap:7}}>
+                  {meal}
+                  <button onClick={()=>{const h=history.filter((_,j)=>j!==i);setHistory(h);ss("history",h);}} style={{background:"none",border:"none",color:"#334155",cursor:"pointer",fontSize:12,padding:0}}>×</button>
+                </div>
+              ))}
+            </div>
+            <div style={{display:"flex",gap:8}}>
+              <input id="log-inp" placeholder="手動で追加..." onKeyDown={e=>{if(e.key==="Enter"&&e.target.value.trim()){const h=[...history,e.target.value.trim()];setHistory(h);ss("history",h);e.target.value="";}}} style={{flex:1,background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:9,color:"#e2e8f0",padding:"8px 12px",fontSize:12,outline:"none"}}/>
+              <button onClick={()=>{const inp=document.getElementById("log-inp");if(inp?.value?.trim()){const h=[...history,inp.value.trim()];setHistory(h);ss("history",h);inp.value="";}}} style={{background:`${C}22`,border:`1px solid ${C}44`,color:C,borderRadius:9,padding:"8px 14px",fontSize:12,fontWeight:700,cursor:"pointer"}}>追加</button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function MealRow({icon,label,menu,cost,budget,note,highlight}) {
+  const over = cost && cost > budget;
+  return (
+    <div style={{display:"flex",alignItems:"center",gap:10,padding:"7px 0",borderBottom:"1px solid rgba(255,255,255,0.05)"}}>
+      <span style={{fontSize:14,width:20}}>{icon}</span>
+      <div style={{flex:1}}>
+        <div style={{display:"flex",alignItems:"center",gap:6}}>
+          <span style={{fontSize:11,color:"#64748b",width:120,flexShrink:0}}>{label}</span>
+          <span style={{fontSize:13,fontWeight:600,color:highlight||"#e2e8f0"}}>{menu||"—"}</span>
+        </div>
+        {note && <div style={{fontSize:10,color:"#475569",marginLeft:126}}>{note}</div>}
+      </div>
+      {cost && <span style={{fontSize:11,color:over?"#f87171":"#94a3b8",flexShrink:0}}>¥{cost}<span style={{color:"#334155"}}>/{budget}</span></span>}
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(<App />);
+</script>
+
+</body>
+</html>
