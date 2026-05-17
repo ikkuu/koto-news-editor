@@ -365,23 +365,45 @@ JSONのみ:{"day":"${DAYS[i]}","main":"料理名","side1":"副菜1","side2":"副
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
           <div style={{background:"#0f1f2e",border:"1px solid rgba(255,255,255,0.1)",borderRadius:16,padding:24,maxWidth:420,width:"100%"}}>
             <div style={{fontSize:16,fontWeight:700,marginBottom:12}}>⚙ 設定</div>
-            <div style={{fontSize:12,color:"#94a3b8",marginBottom:8}}>Anthropic APIキー（端末にのみ保存されます）</div>
+
+            {/* 現在のキー状況 */}
+            {apiKey ? (
+              <div style={{fontSize:11,color:"#22c55e",marginBottom:10,padding:"8px 12px",background:"rgba(34,197,94,0.1)",border:"1px solid rgba(34,197,94,0.25)",borderRadius:6}}>
+                ✓ 登録済（末尾4桁: ...{apiKey.slice(-4)}）
+              </div>
+            ) : (
+              <div style={{fontSize:11,color:"#f87171",marginBottom:10,padding:"8px 12px",background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.25)",borderRadius:6}}>
+                ⚠ まだ登録されていません
+              </div>
+            )}
+
+            <div style={{fontSize:12,color:"#94a3b8",marginBottom:8}}>Anthropic APIキー</div>
             <input
-              type="password"
-              defaultValue={apiKey}
+              type="text"
+              value={apiKeyDraft}
               onChange={e=>setApiKeyDraft(e.target.value)}
-              placeholder="sk-ant-..."
-              style={{width:"100%",background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:8,color:"#e2e8f0",padding:"10px 12px",fontSize:13,outline:"none",boxSizing:"border-box",marginBottom:12}}
+              placeholder="例: sk-ant-api03-..."
+              autoCapitalize="off"
+              autoCorrect="off"
+              spellCheck={false}
+              style={{width:"100%",background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:8,color:"#e2e8f0",padding:"10px 12px",fontSize:12,outline:"none",boxSizing:"border-box",marginBottom:12,fontFamily:"monospace"}}
             />
             <div style={{fontSize:10,color:"#64748b",lineHeight:1.7,marginBottom:16}}>
-              ※ console.anthropic.com から取得した API キーを入力してください。<br/>
-              ※ キーは端末の localStorage にのみ保存され、サーバーには送信されません。<br/>
-              ※ 献立生成1回あたり概算 ¥3〜10 程度。
+              ※ console.anthropic.com → Settings → API Keys から取得。<br/>
+              ※ キーは端末の localStorage にのみ保存（サーバー送信なし）。<br/>
+              ※ ホーム画面アプリと Safari は別ストレージのことがあり、各々で再設定が必要な場合あり。
             </div>
             <div style={{display:"flex",gap:8}}>
               <button onClick={()=>setShowSettings(false)} style={{flex:1,background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",color:"#94a3b8",borderRadius:8,padding:"10px",fontSize:13,cursor:"pointer"}}>キャンセル</button>
               <button onClick={()=>{
-                const k = apiKeyDraft || apiKey;
+                const k = (apiKeyDraft || "").trim();
+                if (!k) {
+                  alert("APIキーを入力してください");
+                  return;
+                }
+                if (!k.startsWith("sk-ant-")) {
+                  if (!confirm("'sk-ant-' で始まらないキーですが、このまま保存しますか？")) return;
+                }
                 setApiKey(k);
                 localStorage.setItem("mp-apikey", k);
                 setShowSettings(false);
